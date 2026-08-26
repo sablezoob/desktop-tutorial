@@ -1,0 +1,101 @@
+# Колода: lesson — слова с занятий
+# формат: слово | перевод | /транскрипция/ | пример EN | пример RU
+
+# --- базовая лексика ---
+how | как, каким образом | /haʊ/ | How have you managed to finish so fast? | Как тебе удалось закончить так быстро?
+power | сила, власть | /ˈpaʊə/ | Knowledge is power. | Знание — сила.
+weakness | слабость | /ˈwiːknəs/ | Sweets are my main weakness. | Сладкое — моя главная слабость.
+few | несколько, мало | /fjuː/ | I have a few questions. | У меня есть несколько вопросов.
+special | особенный, специальный | /ˈspeʃl/ | Today is a special day. | Сегодня особенный день.
+hurt | ранить, причинять боль | /hɜːt/ | I have hurt my knee. | Я повредил колено.
+with | с, вместе с | /wɪð/ | Come with me. | Пойдём со мной.
+without | без | /wɪˈðaʊt/ | I cannot work without coffee. | Я не могу работать без кофе.
+each | каждый (из группы) | /iːtʃ/ | Each student has a task. | У каждого студента своё задание.
+manage | управлять, руководить; суметь | /ˈmænɪdʒ/ | She manages a small team. | Она руководит небольшой командой.
+decision | решение | /dɪˈsɪʒn/ | I have made my decision. | Я принял решение.
+active | активный | /ˈæktɪv/ | He is very active at work. | Он очень активен на работе.
+design | дизайн; проектировать | /dɪˈzaɪn/ | The design looks modern. | Дизайн выглядит современно.
+after | после | /ˈɑːftə/ | We will talk after lunch. | Поговорим после обеда.
+up | вверх | /ʌp/ | Look up, the sky is clear. | Посмотри вверх, небо чистое.
+down | вниз | /daʊn/ | The prices have gone down. | Цены пошли вниз.
+importance | важность | /ɪmˈpɔːtns/ | Do not underestimate the importance of sleep. | Не недооценивай важность сна.
+currently | в настоящее время | /ˈkʌrəntli/ | I am currently learning English. | Сейчас я изучаю английский.
+competition | соревнование, конкуренция | /ˌkɒmpəˈtɪʃn/ | She has won the competition. | Она выиграла соревнование.
+whenever | когда бы ни, всякий раз когда | /wenˈevə/ | Call me whenever you need help. | Звони, когда бы тебе ни понадобилась помощь.
+health | здоровье | /helθ/ | Health is more important than money. | Здоровье важнее денег.
+any | любой, какой-нибудь | /ˈeni/ | Take any book you like. | Возьми любую книгу.
+however | однако, тем не менее | /haʊˈevə/ | However, nothing has changed. | Тем не менее ничего не изменилось.
+every | каждый | /ˈevri/ | I check email every morning. | Я проверяю почту каждое утро.
+near | возле, около | /nɪə/ | There is a park near my house. | Возле моего дома есть парк.
+closer | ближе | /ˈkləʊsə/ | Come closer, please. | Подойди ближе, пожалуйста.
+quick | быстрый | /kwɪk/ | Let us have a quick lunch. | Давай быстро пообедаем.
+called | названный, под названием | /kɔːld/ | We watched a film called Heat. | Мы смотрели фильм под названием Heat.
+thousands | тысячи | /ˈθaʊzndz/ | Thousands of people came. | Пришли тысячи людей.
+totally | полностью, абсолютно | /ˈtəʊtəli/ | I totally agree with you. | Я полностью с тобой согласен.
+during | во время, в течение | /ˈdjʊərɪŋ/ | We met during the holidays. | Мы познакомились во время каникул.
+unfortunately | к сожалению | /ʌnˈfɔːtʃənətli/ | Unfortunately, the shop was closed. | К сожалению, магазин был закрыт.
+would | бы (вспомогательный глагол) | /wʊd/ | I would like some tea. | Я бы хотел чаю.
+
+# --- стороны света ---
+east | восток | /iːst/ | The sun rises in the east. | Солнце встаёт на востоке.
+west | запад | /west/ | They live in the west of the country. | Они живут на западе страны.
+north | север | /nɔːθ/ | The wind comes from the north. | Ветер дует с севера.
+south | юг | /saʊθ/ | Birds fly south in autumn. | Осенью птицы летят на юг.
+
+# --- поездки и впечатления ---
+distance | расстояние | /ˈdɪstəns/ | The distance is about ten kilometres. | Расстояние примерно десять километров.
+impressions | впечатления | /ɪmˈpreʃnz/ | My impressions of the trip are great. | Мои впечатления от поездки отличные.
+hike | поход, прогулка пешком | /haɪk/ | We have been on a hike in the mountains. | Мы сходили в поход в горы.
+exploring | исследование, изучение | /ɪkˈsplɔːrɪŋ/ | We spent the day exploring the old town. | Мы провели день, исследуя старый город.
+unforgettable | незабываемый | /ˌʌnfəˈɡetəbl/ | It was an unforgettable evening. | Это был незабываемый вечер.
+familiar | знакомый | /fəˈmɪliə/ | Your face looks familiar. | Твоё лицо кажется знакомым.
+somewhere | где-то, куда-то | /ˈsʌmweə/ | Let us go somewhere quiet. | Давай пойдём куда-нибудь потише.
+quiet | тихий | /ˈkwaɪət/ | The street is quiet at night. | Ночью улица тихая.
+midnight | полночь | /ˈmɪdnaɪt/ | We stayed up until midnight. | Мы не ложились до полуночи.
+stay up | не ложиться спать, засидеться допоздна | /ˌsteɪ ˈʌp/ | I stayed up late last night. | Вчера я засиделся допоздна.
+make myself | заставить себя | /ˌmeɪk maɪˈself/ | I cannot make myself get up early. | Я не могу заставить себя вставать рано.
+by bus | на автобусе | /baɪ ˈbʌs/ | I usually go to work by bus. | Обычно я езжу на работу на автобусе.
+by train | на поезде | /baɪ ˈtreɪn/ | We travelled by train. | Мы ехали на поезде.
+by car | на машине | /baɪ ˈkɑː/ | It is faster by car. | На машине быстрее.
+public transport | общественный транспорт | /ˌpʌblɪk ˈtrænspɔːt/ | I go everywhere by public transport. | Я везде езжу на общественном транспорте.
+
+# --- дом, семья, быт ---
+earphones | наушники | /ˈɪəfəʊnz/ | I have lost my earphones. | Я потерял наушники.
+bookshelf | книжная полка | /ˈbʊkʃelf/ | Put the book on the bookshelf. | Поставь книгу на полку.
+living room | гостиная | /ˈlɪvɪŋ ruːm/ | We watch films in the living room. | Мы смотрим фильмы в гостиной.
+family | семья | /ˈfæməli/ | My family lives nearby. | Моя семья живёт рядом.
+surname | фамилия | /ˈsɜːneɪm/ | What is your surname? | Какая у вас фамилия?
+place | место | /pleɪs/ | This is my favourite place. | Это моё любимое место.
+advice | совет | /ədˈvaɪs/ | Thank you for your advice. | Спасибо за совет.
+pandemic | пандемия | /pænˈdemɪk/ | The pandemic has changed our habits. | Пандемия изменила наши привычки.
+business | бизнес, дело | /ˈbɪznəs/ | He has started his own business. | Он открыл своё дело.
+
+# --- деньги и характер ---
+stocks | акции | /stɒks/ | He has bought some stocks. | Он купил акции.
+stroke | инсульт; удар; гладить | /strəʊk/ | He had a stroke last year. | В прошлом году у него был инсульт.
+saver | тот, кто копит (экономный человек) | /ˈseɪvə/ | My wife is a saver, I am a spender. | Жена копит, а я трачу.
+spender | тот, кто тратит, транжира | /ˈspendə/ | He is a big spender. | Он тот ещё транжира.
+morning person | жаворонок, активен утром | /ˈmɔːnɪŋ ˌpɜːsn/ | I am a morning person. | Я жаворонок.
+night person | сова, активен ночью | /ˈnaɪt ˌpɜːsn/ | She is a night person. | Она сова.
+boring | скучный | /ˈbɔːrɪŋ/ | The film was boring. | Фильм был скучным.
+worth it | того стоит | /ˈwɜːθ ɪt/ | It was hard, but worth it. | Было трудно, но оно того стоило.
+disappointed | разочарованный | /ˌdɪsəˈpɔɪntɪd/ | I was disappointed with the result. | Я был разочарован результатом.
+regret | жалеть, сожалеть | /rɪˈɡret/ | I regret nothing. | Я ни о чём не жалею.
+receive | получать | /rɪˈsiːv/ | I have received your letter. | Я получил твоё письмо.
+write it down | записать | /ˌraɪt ɪt ˈdaʊn/ | Write it down so you do not forget. | Запиши, чтобы не забыть.
+
+# --- праздник ---
+firework | фейерверк | /ˈfaɪəwɜːk/ | The fireworks lasted ten minutes. | Фейерверк длился десять минут.
+parade | парад | /pəˈreɪd/ | We have just watched the parade. | Мы только что посмотрели парад.
+achievement | достижение | /əˈtʃiːvmənt/ | This is a real achievement. | Это настоящее достижение.
+masterpiece | шедевр | /ˈmɑːstəpiːs/ | This painting is a masterpiece. | Эта картина — шедевр.
+layer | слой | /ˈleɪə/ | Put on another layer, it is cold. | Надень ещё один слой, холодно.
+
+# --- еда ---
+preserve | консервировать, сохранять | /prɪˈzɜːv/ | They preserve fish in salt. | Рыбу они консервируют в соли.
+throw away | выбрасывать | /ˌθrəʊ əˈweɪ/ | Do not throw away the receipt. | Не выбрасывай чек.
+tastes | вкусы | /teɪsts/ | Tastes differ. | Вкусы у всех разные.
+semi-finished products | полуфабрикаты | /ˌsemi ˈfɪnɪʃt ˈprɒdʌkts/ | I try to avoid semi-finished products. | Я стараюсь избегать полуфабрикатов.
+
+# --- ещё один маркер Present Perfect ---
+up to now | до сих пор, к настоящему моменту | /ˌʌp tə ˈnaʊ/ | Up to now we have had no problems. | До сих пор у нас не было проблем.

@@ -1,0 +1,63 @@
+# Колода: tense:present-perfect — неправильные глаголы (3-я форма) и маркеры времени
+# Все примеры намеренно даны в Present Perfect: have/has + V3
+be | быть (was/were — been) | /biː/ | I have been here since morning. | Я здесь с самого утра.
+become | становиться (became — become) | /bɪˈkʌm/ | She has become a good teacher. | Она стала хорошим учителем.
+begin | начинать (began — begun) | /bɪˈɡɪn/ | The lesson has already begun. | Урок уже начался.
+break | ломать (broke — broken) | /breɪk/ | He has broken his phone again. | Он снова сломал телефон.
+bring | приносить (brought — brought) | /brɪŋ/ | They have brought good news. | Они принесли хорошие новости.
+build | строить (built — built) | /bɪld/ | We have built a new house. | Мы построили новый дом.
+buy | покупать (bought — bought) | /baɪ/ | I have just bought the tickets. | Я только что купил билеты.
+catch | ловить (caught — caught) | /kætʃ/ | She has caught a cold. | Она простудилась.
+choose | выбирать (chose — chosen) | /tʃuːz/ | Have you chosen a course yet? | Ты уже выбрал курс?
+come | приходить (came — come) | /kʌm/ | Winter has come early this year. | Зима в этом году пришла рано.
+do | делать (did — done) | /duː/ | I have done all my homework. | Я сделал всю домашнюю работу.
+drink | пить (drank — drunk) | /drɪŋk/ | He has drunk three cups of coffee. | Он выпил три чашки кофе.
+drive | водить (drove — driven) | /draɪv/ | She has never driven a truck. | Она никогда не водила грузовик.
+eat | есть (ate — eaten) | /iːt/ | We have not eaten since noon. | Мы не ели с полудня.
+fall | падать (fell — fallen) | /fɔːl/ | The temperature has fallen sharply. | Температура резко упала.
+feel | чувствовать (felt — felt) | /fiːl/ | I have felt tired all week. | Я всю неделю чувствую усталость.
+find | находить (found — found) | /faɪnd/ | Have you found your keys? | Ты нашёл свои ключи?
+forget | забывать (forgot — forgotten) | /fəˈɡet/ | I have forgotten his name. | Я забыл его имя.
+get | получать (got — got/gotten) | /ɡet/ | She has got a new job. | Она получила новую работу.
+give | давать (gave — given) | /ɡɪv/ | They have given us another chance. | Они дали нам ещё один шанс.
+go | идти, ехать (went — gone) | /ɡəʊ/ | He has gone to London. | Он уехал в Лондон.
+grow | расти (grew — grown) | /ɡrəʊ/ | The city has grown a lot. | Город сильно вырос.
+hear | слышать (heard — heard) | /hɪə/ | I have not heard from her yet. | Я пока не получил от неё вестей.
+keep | хранить, держать (kept — kept) | /kiːp/ | He has kept the secret. | Он сохранил секрет.
+know | знать (knew — known) | /nəʊ/ | I have known him for ten years. | Я знаю его десять лет.
+leave | покидать, оставлять (left — left) | /liːv/ | The train has already left. | Поезд уже ушёл.
+lose | терять (lost — lost) | /luːz/ | I have lost my umbrella. | Я потерял зонт.
+make | делать, создавать (made — made) | /meɪk/ | She has made a serious mistake. | Она совершила серьёзную ошибку.
+meet | встречать (met — met) | /miːt/ | We have met before. | Мы уже встречались.
+pay | платить (paid — paid) | /peɪ/ | Have you paid the bill? | Ты оплатил счёт?
+put | класть (put — put) | /pʊt/ | He has put the books on the shelf. | Он положил книги на полку.
+read | читать (read — read) | /riːd/ | I have read this article twice. | Я прочитал эту статью дважды.
+run | бежать (ran — run) | /rʌn/ | She has run five kilometres today. | Сегодня она пробежала пять километров.
+say | говорить, сказать (said — said) | /seɪ/ | He has said nothing about it. | Он ничего об этом не сказал.
+see | видеть (saw — seen) | /siː/ | I have never seen such a storm. | Я никогда не видел такой бури.
+sell | продавать (sold — sold) | /sel/ | They have sold the old car. | Они продали старую машину.
+send | посылать (sent — sent) | /send/ | I have sent you an email. | Я отправил тебе письмо.
+sing | петь (sang — sung) | /sɪŋ/ | She has sung in three concerts. | Она спела на трёх концертах.
+sleep | спать (slept — slept) | /sliːp/ | I have slept badly this week. | На этой неделе я плохо сплю.
+speak | говорить (spoke — spoken) | /spiːk/ | Have you spoken to the doctor? | Ты поговорил с врачом?
+spend | тратить, проводить (spent — spent) | /spend/ | We have spent all our money. | Мы потратили все деньги.
+take | брать (took — taken) | /teɪk/ | Someone has taken my seat. | Кто-то занял моё место.
+teach | учить, преподавать (taught — taught) | /tiːtʃ/ | He has taught English for years. | Он преподаёт английский много лет.
+tell | рассказывать (told — told) | /tel/ | She has told me the truth. | Она сказала мне правду.
+think | думать (thought — thought) | /θɪŋk/ | I have thought about it a lot. | Я много об этом думал.
+understand | понимать (understood — understood) | /ˌʌndəˈstænd/ | Now I have understood the rule. | Теперь я понял правило.
+wear | носить (wore — worn) | /weə/ | He has worn that coat for years. | Он носит это пальто уже много лет.
+win | побеждать (won — won) | /wɪn/ | Our team has won the match. | Наша команда выиграла матч.
+write | писать (wrote — written) | /raɪt/ | I have written three emails today. | Сегодня я написал три письма.
+achieve | достигать, добиваться | /əˈtʃiːv/ | She has achieved a lot this year. | В этом году она многого добилась.
+# --- маркеры Present Perfect ---
+already | уже | /ɔːlˈredi/ | I have already finished the report. | Я уже закончил отчёт.
+yet | ещё (в вопросах и отрицаниях) | /jet/ | Have you finished yet? | Ты уже закончил?
+just | только что | /dʒʌst/ | They have just arrived. | Они только что приехали.
+ever | когда-либо | /ˈevə/ | Have you ever been to Spain? | Ты когда-нибудь был в Испании?
+never | никогда | /ˈnevə/ | I have never tried sushi. | Я никогда не пробовал суши.
+since | с (какого-то момента) | /sɪns/ | We have lived here since 2019. | Мы живём здесь с 2019 года.
+for | в течение (какого-то срока) | /fɔː/ | She has worked here for six months. | Она работает здесь шесть месяцев.
+so far | до сих пор, пока что | /ˌsəʊ ˈfɑː/ | So far we have solved two tasks. | Пока мы решили две задачи.
+recently | недавно | /ˈriːsntli/ | He has recently changed jobs. | Он недавно сменил работу.
+lately | в последнее время | /ˈleɪtli/ | I have not seen him lately. | В последнее время я его не видел.

@@ -1,0 +1,80 @@
+# Колода: verbs-3forms — три формы глагола (V1 — V2 — V3)
+# В транскрипции даны ВСЕ ТРИ формы: у read, say, mean произношение меняется,
+# хотя написание почти то же. Примеры — в Present Perfect, чтобы V3 закреплялась в речи.
+# формат: V1 | перевод · V2 — V3 | /ipa V1/ · /ipa V2/ · /ipa V3/ | пример EN | пример RU
+
+go | идти, ехать · went — gone | /ɡəʊ/ · /went/ · /ɡɒn/ | He has gone to work. | Он ушёл на работу.
+eat | есть, кушать · ate — eaten | /iːt/ · /eɪt/ · /ˈiːtn/ | I have not eaten since morning. | Я не ел с утра.
+write | писать · wrote — written | /raɪt/ · /rəʊt/ · /ˈrɪtn/ | She has written three letters. | Она написала три письма.
+read | читать · read — read | /riːd/ · /red/ · /red/ | I have read this book twice. | Я прочитал эту книгу дважды.
+see | видеть · saw — seen | /siː/ · /sɔː/ · /siːn/ | I have never seen such a storm. | Я никогда не видел такой бури.
+speak | говорить · spoke — spoken | /spiːk/ · /spəʊk/ · /ˈspəʊkən/ | Have you spoken to the doctor? | Ты поговорил с врачом?
+come | приходить · came — come | /kʌm/ · /keɪm/ · /kʌm/ | Winter has come early. | Зима пришла рано.
+take | брать · took — taken | /teɪk/ · /tʊk/ · /ˈteɪkən/ | Someone has taken my seat. | Кто-то занял моё место.
+make | делать, создавать · made — made | /meɪk/ · /meɪd/ · /meɪd/ | She has made a mistake. | Она совершила ошибку.
+give | давать · gave — given | /ɡɪv/ · /ɡeɪv/ · /ˈɡɪvn/ | They have given us a chance. | Они дали нам шанс.
+run | бежать · ran — run | /rʌn/ · /ræn/ · /rʌn/ | She has run five kilometres. | Она пробежала пять километров.
+buy | покупать · bought — bought | /baɪ/ · /bɔːt/ · /bɔːt/ | I have just bought the tickets. | Я только что купил билеты.
+bring | приносить · brought — brought | /brɪŋ/ · /brɔːt/ · /brɔːt/ | They have brought good news. | Они принесли хорошие новости.
+drink | пить · drank — drunk | /drɪŋk/ · /dræŋk/ · /drʌŋk/ | He has drunk three cups of coffee. | Он выпил три чашки кофе.
+drive | водить машину · drove — driven | /draɪv/ · /drəʊv/ · /ˈdrɪvn/ | She has never driven a truck. | Она никогда не водила грузовик.
+do | делать · did — done | /duː/ · /dɪd/ · /dʌn/ | I have done all my homework. | Я сделал всю домашнюю работу.
+have | иметь · had — had | /hæv/ · /hæd/ · /hæd/ | We have had this car for years. | У нас эта машина уже много лет.
+begin | начинать · began — begun | /bɪˈɡɪn/ · /bɪˈɡæn/ · /bɪˈɡʌn/ | The lesson has already begun. | Урок уже начался.
+build | строить · built — built | /bɪld/ · /bɪlt/ · /bɪlt/ | We have built a new house. | Мы построили новый дом.
+choose | выбирать · chose — chosen | /tʃuːz/ · /tʃəʊz/ · /ˈtʃəʊzn/ | Have you chosen a course yet? | Ты уже выбрал курс?
+cut | резать · cut — cut | /kʌt/ · /kʌt/ · /kʌt/ | I have cut my finger. | Я порезал палец.
+draw | рисовать; тянуть · drew — drawn | /drɔː/ · /druː/ · /drɔːn/ | He has drawn a portrait. | Он нарисовал портрет.
+fall | падать; осень (амер.) · fell — fallen | /fɔːl/ · /fel/ · /ˈfɔːlən/ | The temperature has fallen sharply. | Температура резко упала.
+feel | чувствовать · felt — felt | /fiːl/ · /felt/ · /felt/ | I have felt tired all week. | Я всю неделю чувствую усталость.
+find | находить · found — found | /faɪnd/ · /faʊnd/ · /faʊnd/ | Have you found your keys? | Ты нашёл свои ключи?
+fly | летать · flew — flown | /flaɪ/ · /fluː/ · /fləʊn/ | The birds have flown south. | Птицы улетели на юг.
+forget | забывать · forgot — forgotten | /fəˈɡet/ · /fəˈɡɒt/ · /fəˈɡɒtn/ | I have forgotten his name. | Я забыл его имя.
+freeze | замерзать, замораживать · froze — frozen | /friːz/ · /frəʊz/ · /ˈfrəʊzn/ | The lake has frozen. | Озеро замёрзло.
+grow | расти · grew — grown | /ɡrəʊ/ · /ɡruː/ · /ɡrəʊn/ | The city has grown a lot. | Город сильно вырос.
+hang | вешать, висеть · hung — hung | /hæŋ/ · /hʌŋ/ · /hʌŋ/ | He has hung the picture on the wall. | Он повесил картину на стену.
+hear | слышать · heard — heard | /hɪə/ · /hɜːd/ · /hɜːd/ | I have not heard from her yet. | Я пока не получил от неё вестей.
+hide | прятать, прятаться · hid — hidden | /haɪd/ · /hɪd/ · /ˈhɪdn/ | The cat has hidden under the bed. | Кот спрятался под кроватью.
+hit | ударять, попадать · hit — hit | /hɪt/ · /hɪt/ · /hɪt/ | The ball has hit the window. | Мяч попал в окно.
+hold | держать · held — held | /həʊld/ · /held/ · /held/ | She has held the door for me. | Она придержала мне дверь.
+keep | хранить, держать · kept — kept | /kiːp/ · /kept/ · /kept/ | He has kept the secret. | Он сохранил секрет.
+know | знать · knew — known | /nəʊ/ · /njuː/ · /nəʊn/ | I have known him for ten years. | Я знаю его десять лет.
+leave | покидать, оставлять · left — left | /liːv/ · /left/ · /left/ | The train has already left. | Поезд уже ушёл.
+lend | одалживать (кому-то) · lent — lent | /lend/ · /lent/ · /lent/ | I have lent him my bike. | Я одолжил ему свой велосипед.
+let | позволять, разрешать · let — let | /let/ · /let/ · /let/ | They have let us stay. | Они разрешили нам остаться.
+lose | терять · lost — lost | /luːz/ · /lɒst/ · /lɒst/ | I have lost my umbrella. | Я потерял зонт.
+mean | значить, иметь в виду · meant — meant | /miːn/ · /ment/ · /ment/ | I have not meant to hurt you. | Я не хотел тебя обидеть.
+meet | встречать · met — met | /miːt/ · /met/ · /met/ | We have met before. | Мы уже встречались.
+open | открывать · opened — opened | /ˈəʊpən/ · /ˈəʊpənd/ · /ˈəʊpənd/ | They have opened a new shop. | Они открыли новый магазин.
+pay | платить · paid — paid | /peɪ/ · /peɪd/ · /peɪd/ | Have you paid the bill? | Ты оплатил счёт?
+put | класть · put — put | /pʊt/ · /pʊt/ · /pʊt/ | He has put the books on the shelf. | Он положил книги на полку.
+rain | идти о дожде · rained — rained | /reɪn/ · /reɪnd/ · /reɪnd/ | It has rained all day. | Дождь шёл весь день.
+ring | звонить · rang — rung | /rɪŋ/ · /ræŋ/ · /rʌŋ/ | The phone has rung twice. | Телефон звонил дважды.
+rise | подниматься, вставать · rose — risen | /raɪz/ · /rəʊz/ · /ˈrɪzn/ | The sun has risen. | Солнце взошло.
+say | сказать · said — said | /seɪ/ · /sed/ · /sed/ | He has said nothing about it. | Он ничего об этом не сказал.
+sell | продавать · sold — sold | /sel/ · /səʊld/ · /səʊld/ | They have sold the old car. | Они продали старую машину.
+send | посылать · sent — sent | /send/ · /sent/ · /sent/ | I have sent you an email. | Я отправил тебе письмо.
+set | устанавливать, ставить · set — set | /set/ · /set/ · /set/ | She has set the table. | Она накрыла на стол.
+shake | трясти, качать · shook — shaken | /ʃeɪk/ · /ʃʊk/ · /ˈʃeɪkən/ | He has shaken my hand. | Он пожал мне руку.
+shine | светить, сиять · shone — shone | /ʃaɪn/ · /ʃɒn/ · /ʃɒn/ | The sun has shone all week. | Солнце светило всю неделю.
+shoot | стрелять · shot — shot | /ʃuːt/ · /ʃɒt/ · /ʃɒt/ | The film has been shot in Italy. | Фильм снимали в Италии.
+show | показывать · showed — shown | /ʃəʊ/ · /ʃəʊd/ · /ʃəʊn/ | She has shown me the photos. | Она показала мне фотографии.
+shut | закрывать · shut — shut | /ʃʌt/ · /ʃʌt/ · /ʃʌt/ | Please, shut the door. | Пожалуйста, закрой дверь.
+sing | петь · sang — sung | /sɪŋ/ · /sæŋ/ · /sʌŋ/ | She has sung in three concerts. | Она спела на трёх концертах.
+
+# --- глаголы, которых нет в таблице, но они были в колоде Present Perfect ---
+be | быть · was, were — been | /biː/ · /wɒz, wɜː/ · /biːn/ | I have been here since morning. | Я здесь с самого утра.
+become | становиться · became — become | /bɪˈkʌm/ · /bɪˈkeɪm/ · /bɪˈkʌm/ | She has become a good teacher. | Она стала хорошим учителем.
+catch | ловить · caught — caught | /kætʃ/ · /kɔːt/ · /kɔːt/ | She has caught a cold. | Она простудилась.
+get | получать · got — got | /ɡet/ · /ɡɒt/ · /ɡɒt/ | She has got a new job. | Она получила новую работу.
+sit | сидеть · sat — sat | /sɪt/ · /sæt/ · /sæt/ | We have sat here for an hour. | Мы сидим здесь уже час.
+sleep | спать · slept — slept | /sliːp/ · /slept/ · /slept/ | I have slept badly this week. | На этой неделе я плохо сплю.
+spend | тратить, проводить · spent — spent | /spend/ · /spent/ · /spent/ | We have spent all our money. | Мы потратили все деньги.
+stand | стоять · stood — stood | /stænd/ · /stʊd/ · /stʊd/ | He has stood in the queue for an hour. | Он простоял в очереди час.
+teach | учить, преподавать · taught — taught | /tiːtʃ/ · /tɔːt/ · /tɔːt/ | He has taught English for years. | Он преподаёт английский много лет.
+tell | рассказывать · told — told | /tel/ · /təʊld/ · /təʊld/ | She has told me the truth. | Она сказала мне правду.
+think | думать · thought — thought | /θɪŋk/ · /θɔːt/ · /θɔːt/ | I have thought about it a lot. | Я много об этом думал.
+understand | понимать · understood — understood | /ˌʌndəˈstænd/ · /ˌʌndəˈstʊd/ · /ˌʌndəˈstʊd/ | Now I have understood the rule. | Теперь я понял правило.
+wear | носить одежду · wore — worn | /weə/ · /wɔː/ · /wɔːn/ | He has worn that coat for years. | Он носит это пальто много лет.
+win | побеждать · won — won | /wɪn/ · /wʌn/ · /wʌn/ | Our team has won the match. | Наша команда выиграла матч.
+break | ломать · broke — broken | /breɪk/ · /brəʊk/ · /ˈbrəʊkən/ | He has broken his phone again. | Он снова сломал телефон.

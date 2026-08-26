@@ -1,0 +1,376 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Тренировка — Vocab Popup</title>
+<style>
+  :root{
+    --bg:#12151b; --panel:#191d25; --panel2:#1f242e; --line:#2b313d;
+    --tx:#e6eaf2; --dim:#8b93a5; --mut:#5b6272;
+    --acc:#3a86ff; --ok:#3ddc91; --warn:#ffb454; --bad:#ff6b6b;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--tx);
+       font:15px/1.55 "Segoe UI",system-ui,sans-serif}
+  a{color:var(--acc);text-decoration:none}
+  header{display:flex;align-items:center;gap:16px;padding:14px 26px;
+         background:var(--panel);border-bottom:1px solid var(--line)}
+  header h1{font-size:16px;margin:0;font-weight:600}
+  .prog{margin-left:auto;color:var(--dim);font-size:13px}
+  main{max-width:720px;margin:0 auto;padding:26px}
+
+  .setup{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:20px}
+  .row{display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end}
+  .row>div{flex:1;min-width:150px}
+  label{display:block;color:var(--dim);font-size:12px;margin-bottom:5px}
+  select,input{width:100%;background:var(--panel2);color:var(--tx);border:1px solid var(--line);
+        border-radius:8px;padding:9px 11px;font:15px "Segoe UI",sans-serif}
+  select:focus,input:focus{outline:none;border-color:var(--acc)}
+  button.act{background:var(--acc);border:none;color:#fff;padding:11px 24px;border-radius:9px;
+             cursor:pointer;font-size:15px;font-weight:500}
+  button.act:hover{filter:brightness(1.12)}
+  .modes{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:6px}
+  .modes button{background:var(--panel2);border:1px solid var(--line);color:var(--dim);
+                padding:13px 12px;border-radius:10px;cursor:pointer;text-align:left;font-size:14px}
+  .modes button:hover{border-color:var(--acc);color:var(--tx)}
+  .modes button.on{border-color:var(--acc);background:#24344d;color:#9ecbff}
+  .modes small{display:block;color:var(--mut);font-size:11px;margin-top:3px}
+
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;
+        padding:30px;min-height:330px;display:flex;flex-direction:column}
+  .kicker{color:var(--acc);font-size:11px;letter-spacing:.7px;text-transform:uppercase}
+  .word{font-size:38px;font-weight:600;margin:10px 0 4px}
+  .ipa{color:#7fd4ff;font-size:17px}
+  .trans{color:var(--warn);font-size:22px;margin-top:12px}
+  .ex{color:#c3c9d6;font-size:15px;margin-top:14px}
+  .exru{color:var(--mut);font-size:14px}
+  .meta{color:var(--mut);font-size:12px;margin-top:auto;padding-top:14px}
+
+  .forms{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:16px;
+         background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+  .forms .t{color:var(--mut);font-size:10px;font-weight:600;letter-spacing:1px}
+  .forms .w{font-size:19px;font-weight:600;margin-top:2px}
+  .forms .i{color:#6a93a8;font-size:12px}
+  .forms .v3 .t{color:var(--warn)} .forms .v3 .w{color:var(--warn)}
+  @media (max-width: 760px){
+    .forms > div{display:flex;align-items:baseline;gap:10px}
+    .forms .t{min-width:26px}
+  }
+
+  .opts{display:flex;flex-direction:column;gap:9px;margin-top:18px}
+  .opts button{background:var(--panel2);border:1px solid var(--line);color:var(--tx);
+        padding:13px 16px;border-radius:9px;cursor:pointer;text-align:left;font-size:16px;
+        display:flex;gap:12px;align-items:center}
+  .opts button:hover:not(:disabled){border-color:var(--acc)}
+  .opts button:disabled{cursor:default}
+  .opts button.ok{border-color:var(--ok);background:#1b3a2b;color:#c9f5de}
+  .opts button.bad{border-color:var(--bad);background:#3d1f25;color:#ffd9d9}
+  .opts .n{color:var(--mut);font-size:12px;border:1px solid var(--line);border-radius:5px;
+           padding:1px 7px;flex:0 0 auto}
+
+  .answers{display:flex;gap:10px;margin-top:20px;flex-wrap:wrap}
+  .answers button{border:1px solid var(--line);background:var(--panel2);color:var(--tx);
+        padding:12px 20px;border-radius:9px;cursor:pointer;font-size:15px}
+  .answers .know{background:#1f4d35;border-color:#2c6b49;color:#b9f2d1}
+  .answers .again{background:#4d2f1f;border-color:#6b452c;color:#f2d6b9}
+  .answers .reveal{background:#24344d;border-color:var(--acc);color:#9ecbff;flex:1}
+  .answers button:hover{filter:brightness(1.15)}
+
+  .feed{margin-top:16px;font-size:16px;font-weight:600}
+  .feed.ok{color:var(--ok)} .feed.bad{color:var(--bad)}
+  .bar{height:4px;background:var(--panel2);border-radius:2px;margin-bottom:18px;overflow:hidden}
+  .bar i{display:block;height:100%;background:var(--acc);width:0;transition:width .25s}
+  .hint{color:var(--mut);font-size:12px;margin-top:14px}
+  .done{text-align:center;padding:40px 20px}
+  .done .big{font-size:46px;font-weight:600}
+  .done .sub{color:var(--dim);margin-top:8px}
+  .tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:26px 0}
+  .tiles div{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:14px}
+  .tiles .n{font-size:26px;font-weight:600}
+  .tiles .l{color:var(--mut);font-size:11px;text-transform:uppercase}
+  kbd{background:var(--panel2);border:1px solid var(--line);border-bottom-width:2px;
+      border-radius:5px;padding:1px 6px;font-size:12px;font-family:inherit;color:var(--dim)}
+
+  /* узкие окна и телефон */
+  @media (max-width: 760px){
+    header{padding:12px 14px;gap:10px;flex-wrap:wrap}
+    main{padding:16px 14px}
+    .card{padding:20px 16px;min-height:auto}
+    .word{font-size:30px}
+    .trans{font-size:19px}
+    .forms{grid-template-columns:1fr;gap:8px;padding:12px 14px}
+    .forms .w{font-size:17px}
+    .modes{grid-template-columns:1fr}
+    .row>div{min-width:100%}
+    .answers{flex-direction:column}
+    .answers button{width:100%}
+    .opts button{font-size:15px;padding:12px 14px}
+    .tiles{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Тренировка</h1>
+  <a href="/">← к дашборду</a>
+  <span class="prog" id="prog"></span>
+</header>
+
+<main>
+  <!-- ===== настройка ===== -->
+  <section id="setup" class="setup">
+    <label>Режим</label>
+    <div class="modes" id="modes">
+      <button data-m="selftest" class="on">Самопроверка
+        <small>вспомнить перевод, потом открыть</small></button>
+      <button data-m="quiz">Квиз
+        <small>выбрать перевод из четырёх</small></button>
+      <button data-m="forms">Формы глагола
+        <small>вспомнить V2 и V3</small></button>
+      <button data-m="type">Угадай
+        <small>написать слово по-английски</small></button>
+      <button data-m="show">Просмотр
+        <small>просто листать и запоминать</small></button>
+    </div>
+    <div class="row" style="margin-top:18px">
+      <div><label>Колода</label><select id="deck"><option value="">все слова</option></select></div>
+      <div><label>Сколько карточек</label><select id="limit">
+        <option>10</option><option selected>20</option><option>30</option><option>50</option>
+      </select></div>
+      <div style="flex:0"><button class="act" onclick="start()">Начать</button></div>
+    </div>
+    <div class="hint">Управление с клавиатуры: <kbd>Space</kbd> показать ответ ·
+      <kbd>1</kbd> знаю · <kbd>2</kbd> ещё раз · <kbd>1</kbd>–<kbd>4</kbd> выбор в квизе ·
+      <kbd>Esc</kbd> выйти</div>
+  </section>
+
+  <!-- ===== карточка ===== -->
+  <section id="stage" style="display:none">
+    <div class="bar"><i id="barfill"></i></div>
+    <div class="card" id="card"></div>
+  </section>
+
+  <!-- ===== итог ===== -->
+  <section id="done" style="display:none" class="card">
+    <div class="done">
+      <div class="big" id="score"></div>
+      <div class="sub" id="scoresub"></div>
+      <div class="tiles" id="tiles"></div>
+      <button class="act" onclick="location.reload()">Ещё раз</button>
+      <div style="margin-top:16px"><a href="/">Вернуться к дашборду</a></div>
+    </div>
+  </section>
+</main>
+
+<script>
+const $  = s => document.querySelector(s);
+const esc = s => (s||"").replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+let mode = "selftest", cards = [], idx = 0, revealed = false, locked = false;
+let right = 0, wrong = 0, startedAt = 0;
+
+document.querySelectorAll("#modes button").forEach(b => b.onclick = () => {
+  document.querySelectorAll("#modes button").forEach(x => x.classList.remove("on"));
+  b.classList.add("on");
+  mode = b.dataset.m;
+});
+
+fetch("/api/decks").then(r => r.json()).then(list => {
+  $("#deck").innerHTML = '<option value="">все слова</option>' +
+    list.map(([t,n]) => `<option value="${esc(t)}">${esc(t)} · ${n}</option>`).join("");
+});
+
+async function start(){
+  const p = new URLSearchParams({deck: $("#deck").value, mode, limit: $("#limit").value});
+  cards = await (await fetch("/api/session?" + p)).json();
+  if (!cards.length){
+    alert(mode === "forms"
+      ? "В этой колоде нет глаголов с формами. Выберите колоду verbs-3forms или другой режим."
+      : "Нет карточек для тренировки.");
+    return;
+  }
+  idx = 0; right = 0; wrong = 0;
+  $("#setup").style.display = "none";
+  $("#stage").style.display = "block";
+  render();
+}
+
+function render(){
+  if (idx >= cards.length) return finish();
+  const c = cards[idx];
+  revealed = (mode === "show");
+  locked = false;
+  startedAt = Date.now();
+  $("#prog").textContent = `${idx+1} из ${cards.length}`;
+  $("#barfill").style.width = (idx / cards.length * 100) + "%";
+
+  const kicker = {selftest:"Вспомните перевод", quiz:"Выберите перевод",
+                  forms:"Вспомните вторую и третью форму", type:"Напишите слово по-английски",
+                  show:"Просмотр"}[mode];
+  const isVerb = !!c.v2;
+  let h = `<div class="kicker">${kicker}</div>`;
+
+  if (mode === "type"){
+    h += `<div class="trans" style="font-size:26px">${esc(c.translation)}</div>
+          <div style="margin-top:20px"><input id="answer" autocomplete="off"
+               placeholder="напишите слово по-английски" autofocus></div>`;
+  } else {
+    h += `<div class="word">${esc(c.word)}</div>`;
+    if (c.ipa && !isVerb) h += `<div class="ipa">${esc(c.ipa)}</div>`;
+    // в режиме форм перевод — не ответ, а подсказка о каком слове речь
+    if (mode === "show" || mode === "forms" || (revealed && mode !== "quiz"))
+      h += `<div class="trans">${esc(c.translation)}</div>`;
+    if (isVerb && (mode === "show" || mode === "forms")) h += formsHtml(c, mode === "forms" && !revealed);
+  }
+
+  if (mode === "quiz" || (mode === "forms" && (c.options||[]).length))
+    h += optsHtml(c);
+
+  if (mode === "show"){
+    if (c.example_en) h += `<div class="ex">${esc(c.example_en)}</div>`;
+    if (c.example_ru) h += `<div class="exru">${esc(c.example_ru)}</div>`;
+  }
+
+  h += `<div class="feed" id="feed"></div>`;
+  h += `<div class="meta">${esc(c.tags||"")} ${c.level ? "· " + esc(c.level) : ""}</div>`;
+  h += answersHtml();
+  $("#card").innerHTML = h;
+
+  if (mode === "type"){
+    const inp = $("#answer");
+    inp.focus();
+    inp.addEventListener("keydown", e => { if (e.key === "Enter") checkTyped(); });
+  }
+}
+
+function formsHtml(c, hidden){
+  const cell = (t, w, i, cls="") =>
+    `<div class="${cls}"><div class="t">${t}</div><div class="w">${esc(w)}</div>
+     <div class="i">${esc(i)}</div></div>`;
+  return `<div class="forms">
+    ${cell("V1", c.word, c.ipa||"")}
+    ${cell("V2", hidden ? "?" : c.v2, hidden ? "" : (c.ipa2||""))}
+    ${cell("V3", hidden ? "?" : c.v3, hidden ? "" : (c.ipa3||""), "v3")}
+  </div>`;
+}
+
+function optsHtml(c){
+  const o = c.options || [];
+  if (!o.length) return `<div class="hint">Не хватает слов для вариантов — ответьте сами.</div>`;
+  return `<div class="opts" id="opts">` + o.map((t,i) =>
+    `<button onclick="pick(${i})"><span class="n">${i+1}</span>${esc(t)}</button>`).join("") + `</div>`;
+}
+
+function answersHtml(){
+  if (mode === "quiz" || (mode === "forms" && (cards[idx].options||[]).length)) return "";
+  if (mode === "type")
+    return `<div class="answers"><button class="reveal" onclick="checkTyped()">Проверить</button></div>`;
+  if (!revealed)
+    return `<div class="answers"><button class="reveal" onclick="reveal()">Показать ответ</button></div>`;
+  return `<div class="answers">
+      <button class="know"  onclick="answer('know')">✓ Знаю</button>
+      <button class="again" onclick="answer('again')">↻ Ещё раз</button>
+      <button onclick="answer('skip')">Пропустить</button></div>`;
+}
+
+function reveal(){
+  revealed = true;
+  render2();
+}
+
+function render2(){
+  // перерисовка текущей карточки с раскрытым ответом
+  const c = cards[idx], isVerb = !!c.v2;
+  let h = `<div class="kicker">Ответ</div><div class="word">${esc(c.word)}</div>`;
+  if (c.ipa && !isVerb) h += `<div class="ipa">${esc(c.ipa)}</div>`;
+  if (isVerb) h += formsHtml(c, false);
+  h += `<div class="trans">${esc(c.translation)}</div>`;
+  if (c.example_en) h += `<div class="ex">${esc(c.example_en)}</div>`;
+  if (c.example_ru) h += `<div class="exru">${esc(c.example_ru)}</div>`;
+  h += `<div class="feed" id="feed"></div>`;
+  h += `<div class="meta">${esc(c.tags||"")}</div>`;
+  h += `<div class="answers">
+      <button class="know"  onclick="answer('know')">✓ Знаю</button>
+      <button class="again" onclick="answer('again')">↻ Ещё раз</button>
+      <button onclick="answer('skip')">Пропустить</button></div>`;
+  $("#card").innerHTML = h;
+}
+
+function pick(n){
+  if (locked) return;
+  locked = true;
+  const c = cards[idx];
+  const correct = mode === "forms" ? c.v3 : c.translation;
+  const chosen = c.options[n];
+  document.querySelectorAll("#opts button").forEach(b => {
+    b.disabled = true;
+    const txt = b.textContent.replace(/^\d+/, "").trim();
+    if (txt === correct.trim()) b.classList.add("ok");
+    else if (txt === chosen.trim()) b.classList.add("bad");
+  });
+  verdict(chosen === correct);
+}
+
+function checkTyped(){
+  if (locked) return;
+  const c = cards[idx];
+  const norm = s => (s||"").toLowerCase().trim().replace(/\s+/g," ");
+  const ok = norm($("#answer").value) === norm(c.word);
+  locked = true;
+  $("#answer").disabled = true;
+  verdict(ok);
+}
+
+function verdict(ok){
+  const c = cards[idx];
+  ok ? right++ : wrong++;
+  const f = $("#feed");
+  f.className = "feed " + (ok ? "ok" : "bad");
+  f.textContent = ok ? "Верно!" :
+    (mode === "forms" ? `Правильно: ${c.word} — ${c.v2} — ${c.v3}`
+                      : `Правильно: ${c.word} — ${c.translation}`);
+  send(ok ? "know" : "again");
+  setTimeout(() => { idx++; render(); }, 1600);
+}
+
+async function answer(action){
+  if (action === "know") right++; else if (action === "again") wrong++;
+  await send(action);
+  idx++;
+  render();
+}
+
+function send(action){
+  return fetch("/api/answer", {method:"POST", headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({word_id: cards[idx].id, action, ms: Date.now() - startedAt})});
+}
+
+function finish(){
+  $("#stage").style.display = "none";
+  $("#done").style.display = "block";
+  $("#prog").textContent = "";
+  const total = right + wrong;
+  const pct = total ? Math.round(right / total * 100) : 0;
+  $("#score").textContent = pct + "%";
+  $("#score").style.color = pct >= 80 ? "var(--ok)" : pct >= 50 ? "var(--warn)" : "var(--bad)";
+  $("#scoresub").textContent = `пройдено карточек: ${cards.length}`;
+  $("#tiles").innerHTML = `
+    <div><div class="n" style="color:var(--ok)">${right}</div><div class="l">знаю</div></div>
+    <div><div class="n" style="color:var(--warn)">${wrong}</div><div class="l">ещё раз</div></div>
+    <div><div class="n">${cards.length}</div><div class="l">всего</div></div>`;
+}
+
+document.addEventListener("keydown", e => {
+  if ($("#stage").style.display === "none") return;
+  if (e.key === "Escape") { location.href = "/"; return; }
+  if (mode === "type") return;
+  const opts = document.querySelectorAll("#opts button");
+  if (opts.length && "1234".includes(e.key)) { pick(+e.key - 1); return; }
+  if (e.key === " " && !revealed) { e.preventDefault(); reveal(); return; }
+  if (revealed && e.key === "1") answer("know");
+  if (revealed && e.key === "2") answer("again");
+});
+</script>
+</body>
+</html>

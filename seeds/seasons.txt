@@ -1,0 +1,57 @@
+# Колода: seasons — времена года, погода, природа
+# формат: слово | перевод | /транскрипция/ | пример EN | пример RU
+season | время года, сезон | /ˈsiːzn/ | Autumn is my favourite season. | Осень — моё любимое время года.
+spring | весна | /sprɪŋ/ | The garden comes alive in spring. | Весной сад оживает.
+summer | лето | /ˈsʌmə/ | We spend every summer by the sea. | Каждое лето мы проводим у моря.
+autumn | осень | /ˈɔːtəm/ | Autumn brings cold rain. | Осень приносит холодные дожди.
+fall | осень (амер.) | /fɔːl/ | In the US they say fall, not autumn. | В США говорят fall, а не autumn.
+winter | зима | /ˈwɪntə/ | The winter here lasts five months. | Зима здесь длится пять месяцев.
+weather | погода | /ˈweðə/ | The weather changes very quickly. | Погода меняется очень быстро.
+climate | климат | /ˈklaɪmət/ | The climate is getting warmer. | Климат становится теплее.
+temperature | температура | /ˈtemprətʃə/ | The temperature dropped below zero. | Температура упала ниже нуля.
+forecast | прогноз | /ˈfɔːkɑːst/ | The forecast promises snow. | Прогноз обещает снег.
+snow | снег | /snəʊ/ | Heavy snow covered the roads. | Сильный снег засыпал дороги.
+snowflake | снежинка | /ˈsnəʊfleɪk/ | Every snowflake is different. | Каждая снежинка неповторима.
+frost | мороз, иней | /frɒst/ | There was frost on the window. | На окне был иней.
+freeze | замерзать | /friːz/ | The lake freezes in December. | Озеро замерзает в декабре.
+thaw | оттепель, таять | /θɔː/ | An early thaw ruined the ice rink. | Ранняя оттепель испортила каток.
+melt | таять | /melt/ | The snow melts by April. | Снег тает к апрелю.
+ice | лёд | /aɪs/ | Be careful, there is ice on the path. | Осторожно, на дорожке лёд.
+blizzard | метель, буран | /ˈblɪzəd/ | A blizzard closed the airport. | Метель закрыла аэропорт.
+chilly | прохладный | /ˈtʃɪli/ | It gets chilly after sunset. | После заката становится прохладно.
+freezing | ледяной, очень холодный | /ˈfriːzɪŋ/ | It is freezing outside. | На улице жуткий холод.
+rain | дождь | /reɪn/ | The rain lasted all night. | Дождь шёл всю ночь.
+drizzle | моросить, морось | /ˈdrɪzl/ | A light drizzle began. | Начал моросить мелкий дождь.
+downpour | ливень | /ˈdaʊnpɔː/ | We were caught in a downpour. | Мы попали под ливень.
+thunderstorm | гроза | /ˈθʌndəstɔːm/ | A thunderstorm is coming. | Надвигается гроза.
+lightning | молния | /ˈlaɪtnɪŋ/ | Lightning struck the old tree. | Молния ударила в старое дерево.
+thunder | гром | /ˈθʌndə/ | The thunder woke the children. | Гром разбудил детей.
+fog | туман | /fɒɡ/ | Thick fog covered the valley. | Густой туман накрыл долину.
+foggy | туманный | /ˈfɒɡi/ | It is foggy every morning. | Каждое утро туманно.
+mist | дымка, лёгкий туман | /mɪst/ | Morning mist rose from the river. | С реки поднималась утренняя дымка.
+cloud | облако, туча | /klaʊd/ | Dark clouds gathered above us. | Тёмные тучи собрались над нами.
+cloudy | облачный | /ˈklaʊdi/ | The sky is cloudy today. | Небо сегодня облачное.
+breeze | лёгкий ветерок | /briːz/ | A warm breeze came from the sea. | С моря дул тёплый ветерок.
+wind | ветер | /wɪnd/ | The wind blew all day. | Ветер дул весь день.
+windy | ветреный | /ˈwɪndi/ | March is usually windy. | Март обычно ветреный.
+storm | шторм, буря | /stɔːm/ | The storm broke several trees. | Буря сломала несколько деревьев.
+humid | влажный, душный | /ˈhjuːmɪd/ | The air is hot and humid. | Воздух жаркий и влажный.
+heat | жара, зной | /hiːt/ | I cannot sleep in this heat. | Я не могу спать в такую жару.
+heatwave | период сильной жары | /ˈhiːtweɪv/ | The heatwave lasted two weeks. | Аномальная жара длилась две недели.
+sunshine | солнечный свет | /ˈsʌnʃaɪn/ | We sat in the warm sunshine. | Мы сидели под тёплым солнцем.
+sunrise | восход солнца | /ˈsʌnraɪz/ | We got up before sunrise. | Мы встали до восхода.
+sunset | закат | /ˈsʌnset/ | The sunset was bright red. | Закат был ярко-красным.
+daylight | дневной свет | /ˈdeɪlaɪt/ | In winter there is little daylight. | Зимой мало дневного света.
+blossom | цвести, цветение | /ˈblɒsəm/ | The cherry trees blossom in May. | Вишни цветут в мае.
+bloom | расцветать, цветок | /bluːm/ | The roses are in full bloom. | Розы в полном цвету.
+sprout | прорастать, росток | /spraʊt/ | The first shoots sprout in March. | Первые ростки пробиваются в марте.
+harvest | урожай, собирать урожай | /ˈhɑːvɪst/ | The harvest was rich this year. | Урожай в этом году богатый.
+leaf | лист | /liːf/ | A yellow leaf fell on the bench. | Жёлтый лист упал на скамейку.
+leaves | листья | /liːvz/ | The leaves turn red in October. | В октябре листья краснеют.
+fade | увядать, выцветать | /feɪd/ | The flowers faded quickly. | Цветы быстро увяли.
+hibernate | впадать в спячку | /ˈhaɪbəneɪt/ | Bears hibernate all winter. | Медведи спят всю зиму.
+migrate | мигрировать, улетать | /maɪˈɡreɪt/ | Birds migrate south in autumn. | Осенью птицы улетают на юг.
+evergreen | вечнозелёный | /ˈevəɡriːn/ | Pines are evergreen trees. | Сосны — вечнозелёные деревья.
+mild | мягкий (о погоде) | /maɪld/ | Last winter was unusually mild. | Прошлая зима была необычно мягкой.
+damp | сырой, влажный | /dæmp/ | The cellar smells damp. | В подвале пахнет сыростью.
+puddle | лужа | /ˈpʌdl/ | Children jumped over the puddles. | Дети прыгали через лужи.

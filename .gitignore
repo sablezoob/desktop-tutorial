@@ -1,0 +1,16 @@
+# Личные данные: словарь, прогресс, журнал работы
+data/*
+!data/.gitkeep
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Редакторы и система
+.vscode/
+.idea/
+Thumbs.db
+desktop.ini

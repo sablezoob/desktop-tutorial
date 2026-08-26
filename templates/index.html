@@ -1,0 +1,334 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vocab Popup</title>
+<style>
+  :root{
+    --bg:#12151b; --panel:#191d25; --panel2:#1f242e; --line:#2b313d;
+    --tx:#e6eaf2; --dim:#8b93a5; --mut:#5b6272;
+    --acc:#3a86ff; --ok:#3ddc91; --warn:#ffb454; --bad:#ff6b6b;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--tx);
+       font:14px/1.5 "Segoe UI",system-ui,sans-serif}
+  a{color:var(--acc)}
+  header{display:flex;align-items:center;gap:18px;padding:16px 26px;
+         background:var(--panel);border-bottom:1px solid var(--line);
+         position:sticky;top:0;z-index:10;flex-wrap:wrap}
+  header h1{font-size:17px;margin:0;font-weight:600;white-space:nowrap}
+  nav{display:flex;gap:4px;margin-left:auto;flex-wrap:wrap}
+  nav button{background:transparent;border:1px solid transparent;color:var(--dim);
+             padding:7px 15px;border-radius:8px;cursor:pointer;font-size:14px}
+  nav button:hover{color:var(--tx);background:var(--panel2)}
+  nav button.on{background:var(--acc);color:#fff;border-color:var(--acc)}
+  main{padding:24px 26px;max-width:1180px;margin:0 auto}
+  .tab{display:none} .tab.on{display:block}
+  .grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 18px}
+  .card .n{font-size:29px;font-weight:600;line-height:1.15}
+  .card .l{color:var(--dim);font-size:12px;text-transform:uppercase;letter-spacing:.5px}
+  h2{font-size:15px;font-weight:600;margin:28px 0 12px;color:var(--dim)}
+  textarea,input,select{width:100%;background:var(--panel2);color:var(--tx);
+        border:1px solid var(--line);border-radius:8px;padding:9px 11px;
+        font:14px/1.5 "Segoe UI",sans-serif}
+  textarea{min-height:230px;font-family:"Cascadia Mono",Consolas,monospace;font-size:13px;resize:vertical}
+  input:focus,textarea:focus,select:focus{outline:none;border-color:var(--acc)}
+  label{display:block;color:var(--dim);font-size:12px;margin:0 0 5px}
+  .row{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end}
+  .row>div{flex:1;min-width:150px}
+  button.act{background:var(--acc);border:none;color:#fff;padding:10px 20px;
+             border-radius:8px;cursor:pointer;font-size:14px;font-weight:500}
+  button.act:hover{filter:brightness(1.12)}
+  button.ghost{background:var(--panel2);border:1px solid var(--line);color:var(--dim);
+               padding:7px 13px;border-radius:7px;cursor:pointer;font-size:13px}
+  button.ghost:hover{color:var(--tx);border-color:var(--acc)}
+  .tablewrap{width:100%;overflow-x:auto}
+  table{width:100%;border-collapse:collapse;margin-top:10px;min-width:520px}
+  th{text-align:left;color:var(--mut);font-size:11px;text-transform:uppercase;
+     letter-spacing:.5px;padding:8px 10px;border-bottom:1px solid var(--line);font-weight:500}
+  td{padding:9px 10px;border-bottom:1px solid #22262f;vertical-align:top}
+  tr:hover td{background:#1a1e26}
+  .w{font-weight:600;font-size:15px}
+  .ipa{color:#7fd4ff;font-size:13px}
+  .tr{color:#ffd479}
+  .ex{color:var(--mut);font-size:12px;font-style:italic}
+  .pill{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;
+        border:1px solid var(--line);color:var(--dim)}
+  .pill.new{border-color:#2c4a7a;color:#8ab4ff}
+  .pill.learning{border-color:#7a5b2c;color:var(--warn)}
+  .pill.learned{border-color:#2c6b49;color:var(--ok)}
+  .pill.suspended{border-color:#4a4a4a;color:var(--mut)}
+  .heat{display:flex;gap:3px;flex-wrap:wrap;margin-top:8px}
+  .heat i{width:15px;height:15px;border-radius:3px;background:#20242d;display:block}
+  .hint{color:var(--mut);font-size:12px;margin-top:6px}
+  .ok{color:var(--ok)} .bad{color:var(--bad)}
+  .empty{color:var(--mut);padding:32px;text-align:center}
+  code{background:var(--panel2);padding:1px 5px;border-radius:4px;font-size:12px;color:#9ecbff}
+
+  /* узкие окна и телефон: шапка в две строки, поля на всю ширину */
+  @media (max-width: 760px){
+    header{padding:12px 14px;gap:10px}
+    header #live{display:none}
+    nav{margin-left:0;width:100%;justify-content:flex-start}
+    nav button{padding:6px 11px;font-size:13px}
+    main{padding:16px 14px}
+    .grid{grid-template-columns:repeat(auto-fit,minmax(130px,1fr))}
+    .row>div{min-width:100%}
+    .card .n{font-size:25px}
+    h2{margin:22px 0 10px}
+  }
+  @media (max-width: 420px){
+    .grid{grid-template-columns:1fr 1fr}
+    .card{padding:12px 14px}
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Vocab Popup</h1>
+  <span id="live" class="hint"></span>
+  <nav>
+    <button data-t="stat" class="on">Статистика</button>
+    <button data-t="words">Слова</button>
+    <button data-t="add">Добавить</button>
+    <button data-t="set">Настройки</button>
+    <a href="/train" style="background:var(--acc);color:#fff;padding:7px 16px;border-radius:8px;
+       margin-left:8px;font-size:14px">Тренировка →</a>
+  </nav>
+</header>
+
+<main>
+  <!-- ============ СТАТИСТИКА ============ -->
+  <section class="tab on" id="tab-stat">
+    <div class="grid" id="tiles"></div>
+
+    <h2>Активность за 30 дней</h2>
+    <div class="heat" id="heat"></div>
+    <div class="hint">Насыщенность — сколько показов было в этот день.</div>
+
+    <h2>Тяжёлые слова — чаще всего жмёшь «Ещё раз»</h2>
+    <div class="tablewrap"><table id="hard"><thead><tr>
+      <th>Слово</th><th>Перевод</th><th>Показов</th><th>Знаю</th><th>Ещё раз</th>
+    </tr></thead><tbody></tbody></table></div>
+
+    <h2>Колоды</h2>
+    <div id="tags"></div>
+  </section>
+
+  <!-- ============ СЛОВА ============ -->
+  <section class="tab" id="tab-words">
+    <div class="row">
+      <div><label>Поиск</label><input id="q" placeholder="слово или перевод"></div>
+      <div><label>Статус</label><select id="fstatus">
+        <option value="">все</option><option value="new">новые</option>
+        <option value="learning">в работе</option><option value="learned">выученные</option>
+        <option value="suspended">отложенные</option>
+      </select></div>
+      <div><label>Колода (тег)</label><input id="ftag" placeholder="tense:present-perfect"></div>
+      <div style="flex:0"><button class="act" onclick="loadWords()">Показать</button></div>
+    </div>
+    <div class="tablewrap"><table id="words"><thead><tr>
+      <th style="width:24%">Слово</th><th style="width:26%">Перевод</th>
+      <th style="width:30%">Пример</th><th>Статус</th><th>Показов</th><th></th>
+    </tr></thead><tbody></tbody></table></div>
+  </section>
+
+  <!-- ============ ДОБАВИТЬ ============ -->
+  <section class="tab" id="tab-add">
+    <h2>Импорт списка</h2>
+    <div class="row">
+      <div><label>Колода / тег (необязательно)</label>
+        <input id="itags" placeholder="tense:present-perfect, seasons"></div>
+      <div><label>Уровень</label><select id="ilevel">
+        <option value="">—</option><option>A1</option><option>A2</option>
+        <option>B1</option><option>B2</option><option>C1</option><option>C2</option>
+      </select></div>
+    </div>
+    <label style="margin-top:12px">Слова — по одному в строке</label>
+    <textarea id="itext" placeholder="achieve | достигать, добиваться | /əˈtʃiːv/ | She has achieved a lot. | Она многого достигла.
+spring | весна | /sprɪŋ/
+autumn | осень"></textarea>
+    <div class="hint">
+      Формат: <code>слово | перевод | /транскрипция/ | пример EN | пример RU</code>.
+      Хватит и просто <code>слово | перевод</code>. Разделитель — <code>|</code>, таб
+      или <code>;;</code>. Транскрипция узнаётся по слешам в любой позиции.
+      Строки с <code>#</code> в начале пропускаются.
+    </div>
+    <div style="margin-top:14px"><button class="act" onclick="doImport()">Добавить в словарь</button>
+      <span id="imp" class="hint"></span></div>
+  </section>
+
+  <!-- ============ НАСТРОЙКИ ============ -->
+  <section class="tab" id="tab-set">
+    <div class="row">
+      <div><label>Интервал показа, мин</label><input id="s_interval" type="number" min="1" max="240"></div>
+      <div><label>Время жизни карточки, сек</label><input id="s_life" type="number" min="4" max="120"></div>
+      <div><label>Пауза перед переводом, мс</label><input id="s_hide" type="number" min="0" max="20000" step="500"></div>
+    </div>
+    <div class="row" style="margin-top:14px">
+      <div><label>Где показывать</label><select id="s_corner">
+        <option value="top-center">Сверху по центру</option>
+        <option value="top-left">Сверху слева</option>
+        <option value="top-right">Сверху справа</option>
+        <option value="center">По центру экрана</option>
+        <option value="bottom-left">Снизу слева</option>
+        <option value="bottom-center">Снизу по центру</option>
+        <option value="bottom-right">Снизу справа</option>
+      </select></div>
+      <div><label>Отступ от края, px</label><input id="s_margin" type="number" min="0" max="600"></div>
+      <div><label>Размер карточки</label><select id="s_scale">
+        <option value="auto">авто — по размеру экрана</option>
+        <option value="0.85">компактный</option>
+        <option value="1.0">обычный</option>
+        <option value="1.2">крупный</option>
+        <option value="1.45">очень крупный</option>
+      </select></div>
+      <div><label>Фокус-колода (80% показов)</label>
+        <input id="s_focus" placeholder="пусто = весь словарь"></div>
+    </div>
+    <div class="row" style="margin-top:14px">
+      <div><label>Тихие часы с</label><input id="s_qfrom" placeholder="23:00"></div>
+      <div><label>до</label><input id="s_qto" placeholder="08:00"></div>
+      <div><label>Тихие часы включены</label><select id="s_qen">
+        <option value="1">да</option><option value="0">нет</option></select></div>
+      <div><label>Пауза показов</label><select id="s_paused">
+        <option value="0">выключена</option><option value="1">включена</option></select></div>
+    </div>
+
+    <h2>OpenRouter — автообогащение (подключим позже)</h2>
+    <div class="row">
+      <div><label>API-ключ</label><input id="s_orkey" type="password" placeholder="sk-or-v1-…"></div>
+      <div><label>Модель</label><input id="s_ormodel"></div>
+    </div>
+    <div class="hint">Пока поле пустое — перевод, транскрипция и примеры заполняются вручную
+      при импорте. Ключ здесь просто хранится до подключения конвейера.</div>
+
+    <div style="margin-top:18px"><button class="act" onclick="saveSet()">Сохранить</button>
+      <span id="sav" class="hint"></span></div>
+    <div class="hint" style="margin-top:14px">Интервал и позиция подхватываются на лету —
+      перезапускать приложение не нужно.</div>
+  </section>
+</main>
+
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => (s||"").replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+document.querySelectorAll("nav button").forEach(b => b.onclick = () => {
+  document.querySelectorAll("nav button").forEach(x => x.classList.remove("on"));
+  document.querySelectorAll(".tab").forEach(x => x.classList.remove("on"));
+  b.classList.add("on");
+  $("#tab-" + b.dataset.t).classList.add("on");
+  if (b.dataset.t === "stat") loadStats();
+  if (b.dataset.t === "words") loadWords();
+  if (b.dataset.t === "set") loadSet();
+});
+
+const STATUS_RU = {new:"новое", learning:"в работе", learned:"выучено", suspended:"отложено"};
+
+async function loadStats(){
+  const d = await (await fetch("/api/stats")).json(), s = d.stats;
+  const tiles = [
+    ["Всего слов", s.total, ""], ["Новых", s.new, ""],
+    ["В работе", s.learning, "warn"], ["Выучено", s.learned, "ok"],
+    ["Готовы к показу", s.due_now, ""], ["Показов сегодня", s.shown_today, ""],
+    ["«Знаю» сегодня", s.know_today, "ok"], ["Показов всего", s.shown_total, ""],
+  ];
+  $("#tiles").innerHTML = tiles.map(([l,n,c]) =>
+    `<div class="card"><div class="n ${c}">${n}</div><div class="l">${l}</div></div>`).join("");
+  if (s.no_translation > 0)
+    $("#tiles").innerHTML += `<div class="card"><div class="n bad">${s.no_translation}</div>
+      <div class="l">без перевода</div></div>`;
+
+  const max = Math.max(1, ...d.days.map(x => x.shown));
+  $("#heat").innerHTML = d.days.map(x => {
+    const a = x.shown ? (0.18 + 0.82 * x.shown / max) : 0;
+    const bg = a ? `rgba(58,134,255,${a.toFixed(2)})` : "#20242d";
+    return `<i style="background:${bg}" title="${x.date}: показов ${x.shown}, знаю ${x.know}"></i>`;
+  }).join("");
+
+  $("#hard tbody").innerHTML = d.hard.length ? d.hard.map(r =>
+    `<tr><td class="w">${esc(r.word)}</td><td class="tr">${esc(r.translation)}</td>
+     <td>${r.shown_cnt}</td><td class="ok">${r.know_cnt}</td>
+     <td class="bad">${r.again_cnt}</td></tr>`).join("")
+    : `<tr><td colspan="5" class="empty">Пока нет данных — статистика появится после первых показов.</td></tr>`;
+
+  $("#tags").innerHTML = d.tags.length
+    ? d.tags.map(([t,n]) => `<span class="pill" style="margin:3px 5px 3px 0">${esc(t)} · ${n}</span>`).join("")
+    : `<div class="hint">Колод пока нет. Тег задаётся при импорте.</div>`;
+
+  $("#live").textContent = `готово к показу: ${s.due_now}`;
+}
+
+async function loadWords(){
+  const p = new URLSearchParams({q:$("#q").value, status:$("#fstatus").value, tag:$("#ftag").value});
+  const rows = await (await fetch("/api/words?"+p)).json();
+  $("#words tbody").innerHTML = rows.length ? rows.map(r => `
+    <tr data-id="${r.id}">
+      <td><div class="w">${esc(r.word)}</div><div class="ipa">${esc(r.ipa)}</div>
+          ${r.tags ? `<div class="hint">${esc(r.tags)}</div>` : ""}</td>
+      <td class="tr">${esc(r.translation) || '<span class="bad">— нет перевода —</span>'}</td>
+      <td><div class="ex">${esc(r.example_en)}</div><div class="hint">${esc(r.example_ru)}</div></td>
+      <td><span class="pill ${r.status}">${STATUS_RU[r.status]||r.status}</span></td>
+      <td>${r.shown_cnt} <span class="ok">/${r.know_cnt}</span></td>
+      <td style="white-space:nowrap">
+        <button class="ghost" onclick="setStatus(${r.id},'learned')" title="Больше не спрашивать часто">✓</button>
+        <button class="ghost" onclick="setStatus(${r.id},'new')" title="Учить заново">↻</button>
+        <button class="ghost" onclick="delWord(${r.id})" title="Удалить">✕</button>
+      </td>
+    </tr>`).join("")
+    : `<tr><td colspan="6" class="empty">Ничего не найдено. Загляните во вкладку «Добавить».</td></tr>`;
+}
+
+async function setStatus(id, status){
+  await fetch("/api/word/"+id, {method:"POST", headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({status})});
+  loadWords();
+}
+async function delWord(id){
+  if(!confirm("Удалить слово вместе с его статистикой?")) return;
+  await fetch("/api/word/"+id, {method:"DELETE"});
+  loadWords();
+}
+
+async function doImport(){
+  const body = JSON.stringify({text:$("#itext").value, tags:$("#itags").value, level:$("#ilevel").value});
+  const r = await (await fetch("/api/import", {method:"POST",
+    headers:{"Content-Type":"application/json"}, body})).json();
+  $("#imp").innerHTML = `<span class="ok">добавлено ${r.created}</span>, дополнено ${r.updated}, пропущено ${r.skipped}`;
+  if (r.created || r.updated) $("#itext").value = "";
+}
+
+async function loadSet(){
+  const s = await (await fetch("/api/settings")).json();
+  $("#s_interval").value = s.interval_min; $("#s_life").value = s.popup_seconds;
+  $("#s_hide").value = s.hide_translation_ms; $("#s_corner").value = s.corner;
+  $("#s_margin").value = s.margin_px; $("#s_focus").value = s.focus_tag;
+  $("#s_scale").value = s.card_scale || "auto";
+  $("#s_qfrom").value = s.quiet_from; $("#s_qto").value = s.quiet_to;
+  $("#s_qen").value = s.quiet_enabled; $("#s_paused").value = s.paused;
+  $("#s_orkey").value = s.openrouter_key; $("#s_ormodel").value = s.openrouter_model;
+}
+async function saveSet(){
+  const body = JSON.stringify({
+    interval_min:$("#s_interval").value, popup_seconds:$("#s_life").value,
+    hide_translation_ms:$("#s_hide").value, corner:$("#s_corner").value,
+    margin_px:$("#s_margin").value, focus_tag:$("#s_focus").value,
+    card_scale:$("#s_scale").value,
+    quiet_from:$("#s_qfrom").value, quiet_to:$("#s_qto").value,
+    quiet_enabled:$("#s_qen").value, paused:$("#s_paused").value,
+    openrouter_key:$("#s_orkey").value, openrouter_model:$("#s_ormodel").value});
+  await fetch("/api/settings", {method:"POST", headers:{"Content-Type":"application/json"}, body});
+  $("#sav").innerHTML = '<span class="ok">сохранено</span>';
+  setTimeout(() => $("#sav").textContent = "", 2500);
+}
+
+$("#q").addEventListener("keydown", e => { if(e.key === "Enter") loadWords(); });
+$("#ftag").addEventListener("keydown", e => { if(e.key === "Enter") loadWords(); });
+loadStats();
+setInterval(() => { if ($("#tab-stat").classList.contains("on")) loadStats(); }, 30000);
+</script>
+</body>
+</html>

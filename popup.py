@@ -73,11 +73,14 @@ def build_style(k=1.0):
                   border-radius: {px(14)}px; }}
     #word       {{ color: {C_WORD}; font-size: {px(27)}px; font-weight: 600; }}
     #ipa        {{ color: {C_IPA}; font-size: {px(16)}px; }}
-    #trans      {{ color: {C_TRANS}; font-size: {px(19)}px; }}
-    #hint       {{ color: #7b8496; font-size: {px(16)}px; font-style: italic; }}
+    #trans      {{ color: {C_TRANS}; font-size: {px(19)}px;
+                  margin: {px(6)}px 0 {px(9)}px 0; }}
+    #hint       {{ color: #7b8496; font-size: {px(16)}px; font-style: italic;
+                  margin: {px(6)}px 0 {px(9)}px 0; }}
     #example    {{ color: {C_EXAMPLE}; font-size: {px(15)}px; }}
 
-    #exampleRu  {{ color: {C_EXAMPLE_RU}; font-size: {px(14)}px; }}
+    #exampleRu  {{ color: {C_EXAMPLE_RU}; font-size: {px(14)}px;
+                  margin: {px(3)}px 0 0 0; }}
     #meta       {{ color: {C_META}; font-size: {px(11)}px; }}
     #formsBox   {{ background: #262b35; border: 1px solid #3a4150;
                   border-radius: {px(9)}px; }}

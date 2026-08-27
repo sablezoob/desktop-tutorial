@@ -8,7 +8,7 @@ import sys
 import threading
 import time
 import webbrowser
-from datetime import datetime
+from datetime import datetime, timedelta
 from logging.handlers import RotatingFileHandler
 
 from PySide6.QtCore import Qt, QTimer
@@ -27,6 +27,7 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 LOG_PATH = os.path.join(BASE_DIR, "data", "app.log")
 DASHBOARD_URL = "http://127.0.0.1:8777/"
 REVIEW_URL = "http://127.0.0.1:8777/train?only=unreviewed"
+TRAIN_URL = "http://127.0.0.1:8777/train"
 MUTEX_NAME = "VocabPopup_SingleInstance_Mutex"
 
 log = logging.getLogger("vocab")
@@ -101,6 +102,47 @@ def is_fullscreen_active():
     return False
 
 
+def pause_left():
+    """Сколько осталось до конца временной паузы. None — паузы нет.
+
+    Хранится момент окончания, а не остаток: приложение может быть закрыто
+    и снова открыто, а «тишина до шести вечера» должна пережить перезапуск.
+    """
+    raw = (db.get("pause_until", "") or "").strip()
+    if not raw:
+        return None
+    try:
+        until = datetime.fromisoformat(raw)
+    except ValueError:
+        db.put("pause_until", "")
+        return None
+    if datetime.now() >= until:
+        db.put("pause_until", "")
+        return None
+    return until
+
+
+def set_pause(minutes=None, until=None):
+    """Пауза на N минут или до указанного момента."""
+    if until is None and minutes:
+        until = datetime.now() + timedelta(minutes=minutes)
+    db.put("pause_until", until.isoformat(timespec="seconds") if until else "")
+    return until
+
+
+def next_morning():
+    """Ближайшее утро — момент, когда заканчивается «выключить до завтра»."""
+    try:
+        h, m = [int(x) for x in (db.get("quiet_to", "08:00") or "08:00").split(":")]
+    except ValueError:
+        h, m = 8, 0
+    now = datetime.now()
+    target = now.replace(hour=h, minute=m, second=0, microsecond=0)
+    if target <= now:
+        target += timedelta(days=1)
+    return target
+
+
 def in_quiet_hours():
     if db.get("quiet_enabled", "1") != "1":
         return False
@@ -161,29 +203,81 @@ class App:
 
     # ---------- меню ----------
     def build_menu(self):
+        """Меню несёт состояние — сколько осталось паузы, идут ли показы, —
+        поэтому перед показом обновляется в refresh_menu."""
         m = QMenu()
+        m.aboutToShow.connect(self.refresh_menu)
 
         hk = dict((lbl.split("+")[-1], lbl) for lbl in self.hk_labels)
         a_now = QAction("Показать слово сейчас" + (f"\t{hk['0']}" if "0" in hk else ""), m)
         a_now.triggered.connect(lambda: self.show_next(force=True))
         m.addAction(a_now)
 
-        self.a_pause = QAction("Пауза", m, checkable=True)
+        self.a_state = QAction("", m)
+        self.a_state.setEnabled(False)
+        m.addAction(self.a_state)
+
+        m.addSeparator()
+
+        sub_pause = QMenu("Приостановить", m)
+        for title, minutes in (("на 30 минут", 30), ("на 1 час", 60),
+                               ("на 2 часа", 120), ("на 4 часа", 240)):
+            a = QAction(title, sub_pause)
+            a.triggered.connect(lambda _, v=minutes: self.pause_for(v))
+            sub_pause.addAction(a)
+        sub_pause.addSeparator()
+        a_tomorrow = QAction("Выключить до завтра", sub_pause)
+        a_tomorrow.triggered.connect(self.pause_until_morning)
+        sub_pause.addAction(a_tomorrow)
+        m.addMenu(sub_pause)
+
+        self.a_resume = QAction("Возобновить показы", m)
+        self.a_resume.triggered.connect(self.resume)
+        m.addAction(self.a_resume)
+
+        self.a_pause = QAction("Пауза без срока", m, checkable=True)
         self.a_pause.setChecked(db.get("paused", "0") == "1")
         self.a_pause.toggled.connect(self.on_pause)
         m.addAction(self.a_pause)
 
         m.addSeparator()
 
-        sub_int = QMenu("Интервал", m)
+        sub_time = QMenu("Когда не показывать", m)
+        self.a_quiet = QAction("Тихие часы включены", sub_time, checkable=True)
+        self.a_quiet.toggled.connect(self.on_quiet_toggled)
+        sub_time.addAction(self.a_quiet)
+
+        sub_from = QMenu("Начало тишины", sub_time)
+        grp_from = QActionGroup(sub_from)
+        sub_to = QMenu("Конец тишины", sub_time)
+        grp_to = QActionGroup(sub_to)
+        self.quiet_from_actions, self.quiet_to_actions = {}, {}
+        for hour in range(24):
+            label = "%02d:00" % hour
+            a1 = QAction(label, sub_from, checkable=True)
+            a1.triggered.connect(lambda _, v=label: self.set_quiet("quiet_from", v))
+            grp_from.addAction(a1)
+            sub_from.addAction(a1)
+            self.quiet_from_actions[label] = a1
+
+            a2 = QAction(label, sub_to, checkable=True)
+            a2.triggered.connect(lambda _, v=label: self.set_quiet("quiet_to", v))
+            grp_to.addAction(a2)
+            sub_to.addAction(a2)
+            self.quiet_to_actions[label] = a2
+        sub_time.addMenu(sub_from)
+        sub_time.addMenu(sub_to)
+        m.addMenu(sub_time)
+
+        sub_int = QMenu("Как часто показывать", m)
         grp = QActionGroup(sub_int)
-        cur = db.get_int("interval_min", 3)
+        self.interval_actions = {}
         for n in (1, 2, 3, 5, 10, 15, 30, 60):
-            a = QAction(f"{n} мин", sub_int, checkable=True)
-            a.setChecked(n == cur)
+            a = QAction("каждые %d мин" % n, sub_int, checkable=True)
             a.triggered.connect(lambda _, v=n: self.set_interval(v))
             grp.addAction(a)
             sub_int.addAction(a)
+            self.interval_actions[n] = a
         m.addMenu(sub_int)
 
         sub_pos = QMenu("Где показывать", m)
@@ -192,13 +286,13 @@ class App:
                      ("top-right", "Сверху справа"), ("center", "По центру экрана"),
                      ("bottom-left", "Снизу слева"), ("bottom-center", "Снизу по центру"),
                      ("bottom-right", "Снизу справа")]
-        curpos = db.get("corner", "top-center")
+        self.pos_actions = {}
         for key, title in positions:
             a = QAction(title, sub_pos, checkable=True)
-            a.setChecked(key == curpos)
-            a.triggered.connect(lambda _, v=key: db.put("corner", v))
+            a.triggered.connect(lambda _, v=key: self.set_corner(v))
             grp2.addAction(a)
             sub_pos.addAction(a)
+            self.pos_actions[key] = a
         m.addMenu(sub_pos)
 
         m.addSeparator()
@@ -207,12 +301,16 @@ class App:
         a_review.triggered.connect(lambda: webbrowser.open(REVIEW_URL))
         m.addAction(a_review)
 
+        a_train = QAction("Тренировка…", m)
+        a_train.triggered.connect(lambda: webbrowser.open(TRAIN_URL))
+        m.addAction(a_train)
+
         a_dash = QAction("Дашборд и слова…", m)
         a_dash.triggered.connect(lambda: webbrowser.open(DASHBOARD_URL))
         m.addAction(a_dash)
 
         if self.hk_labels:
-            info = QAction("Клавиши: 1 — знаю, 2 — ещё раз, 3 — пропустить", m)
+            info = QAction("Клавиши: Ctrl+Alt+1 знаю · 2 ещё раз · 3 пропустить", m)
             info.setEnabled(False)
             m.addAction(info)
 
@@ -223,6 +321,85 @@ class App:
 
         self.menu = m
         self.tray.setContextMenu(m)
+        self.refresh_menu()
+
+    def refresh_menu(self):
+        """Состояние могли поменять из дашборда — подтягиваем перед показом."""
+        try:
+            until = pause_left()
+            paused = db.get("paused", "0") == "1"
+            if paused:
+                state = "Показы остановлены"
+            elif until:
+                left = int((until - datetime.now()).total_seconds() // 60) + 1
+                state = "Пауза до %s (осталось %d мин)" % (until.strftime("%H:%M"), left)
+            elif in_quiet_hours():
+                state = "Тихие часы до %s" % db.get("quiet_to", "08:00")
+            else:
+                state = "Показы идут, каждые %d мин" % db.get_int("interval_min", 3)
+            self.a_state.setText(state)
+            self.a_resume.setVisible(bool(until) or paused)
+
+            cur = db.get_int("interval_min", 3)
+            for n, a in self.interval_actions.items():
+                a.setChecked(n == cur)
+            pos = db.get("corner", "top-center")
+            for key, a in self.pos_actions.items():
+                a.setChecked(key == pos)
+            self.a_quiet.setChecked(db.get("quiet_enabled", "1") == "1")
+            self.a_pause.setChecked(paused)
+            for label, a in self.quiet_from_actions.items():
+                a.setChecked(label == db.get("quiet_from", "23:00"))
+            for label, a in self.quiet_to_actions.items():
+                a.setChecked(label == db.get("quiet_to", "08:00"))
+        except Exception:
+            log.exception("Не удалось обновить меню")
+
+    # ---------- действия меню ----------
+    def pause_for(self, minutes):
+        until = set_pause(minutes=minutes)
+        db.put("paused", "0")
+        self.update_icon()
+        self.tray.showMessage(
+            "Vocab Popup",
+            "Карточки не появятся до %s." % until.strftime("%H:%M"),
+            QSystemTrayIcon.Information, 4000)
+        log.info("Пауза на %s мин, до %s", minutes, until.strftime("%H:%M"))
+
+    def pause_until_morning(self):
+        until = set_pause(until=next_morning())
+        db.put("paused", "0")
+        self.update_icon()
+        self.tray.showMessage(
+            "Vocab Popup",
+            "Выключено до завтра, до %s." % until.strftime("%H:%M"),
+            QSystemTrayIcon.Information, 4000)
+        log.info("Выключено до %s", until.strftime("%d.%m %H:%M"))
+
+    def resume(self):
+        db.put("pause_until", "")
+        db.put("paused", "0")
+        self._due_at = time.monotonic() + 5       # первая карточка почти сразу
+        self.update_icon()
+        self.tray.showMessage("Vocab Popup", "Показы возобновлены.",
+                              QSystemTrayIcon.Information, 3000)
+        log.info("Показы возобновлены вручную")
+
+    def set_quiet(self, key, value):
+        db.put(key, value)
+        db.put("quiet_enabled", "1")
+        log.info("Тихие часы: %s = %s", key, value)
+
+    def on_quiet_toggled(self, checked):
+        db.put("quiet_enabled", "1" if checked else "0")
+
+    def set_corner(self, value):
+        db.put("corner", value)
+
+    def update_icon(self):
+        """Серая иконка означает, что сейчас показов не будет."""
+        quiet = db.get("paused", "0") == "1" or pause_left() is not None
+        self.tray.setIcon(make_icon("A", "#5b6272" if quiet else "#3a86ff"))
 
     def on_message_clicked(self):
         """Клик по уведомлению открывает то, ради чего оно показано."""
@@ -287,7 +464,9 @@ class App:
 
     def on_pause(self, checked):
         db.put("paused", "1" if checked else "0")
-        self.tray.setIcon(make_icon("A", "#5b6272" if checked else "#3a86ff"))
+        if not checked:
+            db.put("pause_until", "")
+        self.update_icon()
 
     def on_timer(self):
         want = max(1, db.get_int("interval_min", 3))
@@ -321,7 +500,9 @@ class App:
             else:
                 if self.popup.isVisible():
                     return
+                until = pause_left()
                 reason = ("пауза" if db.get("paused", "0") == "1" else
+                          f"пауза до {until:%H:%M}" if until else
                           "тихие часы" if in_quiet_hours() else
                           "полноэкранное приложение" if is_fullscreen_active() else None)
                 if reason:
@@ -367,8 +548,7 @@ class App:
             log.exception("Не удалось записать ответ word_id=%s", word_id)
 
     def run(self):
-        if db.get("paused", "0") == "1":
-            self.tray.setIcon(make_icon("A", "#5b6272"))
+        self.update_icon()
         QTimer.singleShot(4000, lambda: self.show_next())
         log.info("Запущено. Интервал %s мин", db.get_int("interval_min", 3))
         sys.exit(self.qt.exec())

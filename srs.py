@@ -229,11 +229,14 @@ def next_word():
             if row:
                 return row
 
-    # фокус-колода пуста — берём любое слово из словаря
-    return _pick("""SELECT w.*, s.status, s.interval_min, s.reps
-                    FROM words w JOIN srs s ON s.word_id = w.id
-                    WHERE w.translation != '' AND s.status != 'suspended'
-                    ORDER BY RANDOM() LIMIT 30""")
+    # Фокус-колода пуста — берём любое слово из словаря. Выученные сюда
+    # не попадают: «больше не показывать» должно работать и в этом случае,
+    # иначе на исходе колоды они начинали всплывать снова.
+    tail = "" if db.get("review_learned", "0") == "1" else " AND s.status != 'learned' "
+    return _pick(f"""SELECT w.*, s.status, s.interval_min, s.reps
+                     FROM words w JOIN srs s ON s.word_id = w.id
+                     WHERE w.translation != '' AND s.status != 'suspended' {tail}
+                     ORDER BY RANDOM() LIMIT 30""")
 
 
 # Время в базе хранится в UTC, а «сегодня» человек понимает по своим часам.

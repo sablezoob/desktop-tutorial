@@ -14,6 +14,7 @@ from PySide6.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QGridLayout,
                                QLabel, QPushButton, QLineEdit, QFrame,
                                QGraphicsDropShadowEffect, QApplication)
 
+import aiworker
 import db
 import quiz
 import theme
@@ -408,14 +409,10 @@ class Popup(QWidget):
         self.raise_()
         self._fade(1.0, 220)
 
-    # Слова, которые незачем отправлять на разбор: служебные и само изучаемое.
-    STOP_WORDS = {
-        "a", "an", "the", "i", "you", "he", "she", "it", "we", "they", "me", "him",
-        "her", "us", "them", "my", "your", "his", "its", "our", "their", "is", "am",
-        "are", "was", "were", "be", "been", "have", "has", "had", "do", "does", "did",
-        "not", "no", "and", "or", "but", "if", "to", "of", "in", "on", "at", "for",
-        "with", "from", "by", "as", "this", "that", "these", "those", "there", "here",
-    }
+    # Список общий с очередью разбора: см. aiworker.STOP_WORDS — иначе
+    # карточка и приёмник слов расходились бы в том, что считать служебным.
+    STOP_WORDS = aiworker.STOP_WORDS
+
 
     def _load_sentence(self, row):
         """Берёт наименее показанный пример — слово каждый раз в новом предложении."""

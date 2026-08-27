@@ -163,6 +163,10 @@
 const $  = s => document.querySelector(s);
 const esc = s => (s||"").replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
+// Режим разбора накопленного приходит из адреса: /train?only=unreviewed.
+// Объявление должно идти до первого использования — const не поднимается.
+const ONLY = new URLSearchParams(location.search).get("only") || "";
+
 let mode = "selftest", cards = [], idx = 0, revealed = false, locked = false;
 let right = 0, wrong = 0, startedAt = 0;
 
@@ -188,8 +192,6 @@ fetch("/api/decks").then(r => r.json()).then(list => {
   $("#deck").innerHTML = '<option value="">все слова</option>' +
     list.map(([t,n]) => `<option value="${esc(t)}">${esc(t)} · ${n}</option>`).join("");
 });
-
-const ONLY = new URLSearchParams(location.search).get("only") || "";
 
 async function start(){
   const p = new URLSearchParams({deck: $("#deck").value, mode, limit: $("#limit").value});

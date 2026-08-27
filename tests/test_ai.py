@@ -109,3 +109,35 @@ def test_ai_disabled_without_key(fresh_db):
     assert not ai.is_enabled()
     fresh_db.put("ai_key", "nvapi-test")
     assert ai.is_enabled()
+
+
+def test_unknown_word_that_is_a_form_of_existing_one(fresh_db, words, monkeypatch):
+    """Клик по «dropped» даёт словарную форму «drop». Если она уже есть,
+    заготовку надо убрать, а не падать на уникальности слова."""
+    import ai as ai_mod
+    fresh_db.add_word("drop", translation="ронять", ipa="/drɒp/")
+    wid, _ = aiworker.queue_unknown("dropped", "The temperature has dropped.")
+    monkeypatch.setattr(ai_mod, "explain", lambda *a, **k: {
+        "word": "drop", "translation": "ронять", "ipa": "/drɒp/",
+        "v2": "", "v3": "", "ipa2": "", "ipa3": "",
+        "example_en": "", "example_ru": "",
+    })
+    row = fresh_db.conn().execute("SELECT id, word, note FROM words WHERE id=?", (wid,)).fetchone()
+    assert aiworker.do_unknown(row) == 0
+    left = fresh_db.conn().execute("SELECT COUNT(*) FROM words WHERE word='dropped'").fetchone()[0]
+    assert left == 0, "заготовка должна исчезнуть"
+    assert fresh_db.conn().execute(
+        "SELECT COUNT(*) FROM words WHERE word='drop'").fetchone()[0] == 1
+
+
+def test_service_words_rejected_at_data_level(fresh_db):
+    """Карточка не делает служебные слова кликабельными, но и приёмник
+    не должен их принимать: список общий для обоих."""
+    for word in ("the", "a", "has", "123", "!!"):
+        assert aiworker.queue_unknown(word)[1] == "empty", word
+    assert aiworker.queue_unknown("portrait")[1] == "created"
+
+
+def test_card_and_queue_share_stop_words():
+    import popup
+    assert popup.Popup.STOP_WORDS is aiworker.STOP_WORDS

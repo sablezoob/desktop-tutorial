@@ -34,15 +34,25 @@ def test_learned_word_is_not_shown_again(words, fresh_db):
 
 
 def test_learned_returns_when_review_enabled(words, fresh_db):
+    """Выученное слово должно возвращаться, если включён контроль.
+
+    Проверяем без опоры на случай: остальные слова отложены, поэтому
+    выбрать больше не из чего — и результат однозначен.
+    """
     wid = words["advice"]
     srs.grade(wid, "know")
     srs.grade(wid, "know")
+    c = fresh_db.conn()
+    c.execute("UPDATE srs SET status='suspended' WHERE word_id != ?", (wid,))
+    c.execute("UPDATE srs SET due_at=? WHERE word_id=?", (fresh_db.now_iso(), wid))
+    c.commit()
+
+    fresh_db.put("review_learned", "0")
+    assert srs.next_word() is None, "с выключенным контролем выученное не показывается"
+
     fresh_db.put("review_learned", "1")
-    fresh_db.conn().execute("UPDATE srs SET due_at=? WHERE word_id=?",
-                            (fresh_db.now_iso(), wid))
-    fresh_db.conn().commit()
-    shown = {srs.next_word()["id"] for _ in range(80)}
-    assert wid in shown
+    row = srs.next_word()
+    assert row is not None and row["id"] == wid
 
 
 def test_again_brings_word_back_soon(words, fresh_db):

@@ -20,6 +20,16 @@ log = logging.getLogger("vocab.aiworker")
 IDLE_SLEEP = 25         # пауза, когда делать нечего
 ERROR_SLEEP = 120       # пауза после сбоя, чтобы не долбить неотвечающий сервис
 AI_TAG = "ai"           # тег слов, добавленных нейросетью
+
+# Служебные слова не несут смысла как карточки. Список общий: карточка по нему
+# решает, какие слова примера делать кликабельными, а очередь — что принимать.
+STOP_WORDS = {
+    "a", "an", "the", "i", "you", "he", "she", "it", "we", "they", "me", "him",
+    "her", "us", "them", "my", "your", "his", "its", "our", "their", "is", "am",
+    "are", "was", "were", "be", "been", "have", "has", "had", "do", "does", "did",
+    "not", "no", "and", "or", "but", "if", "to", "of", "in", "on", "at", "for",
+    "with", "from", "by", "as", "this", "that", "these", "those", "there", "here",
+}
 BATCH = 5               # слов в одном запросе: параллельные запросы упираются
                         # в 429, а один ответ на пятёрку идёт не дольше, чем
                         # на одно слово — так вчетверо меньше обращений
@@ -35,7 +45,7 @@ def queue_unknown(word, context=""):
     с непустым переводом. Так недоделанная карточка не попадёт на экран.
     """
     word = (word or "").strip().strip(".,!?;:\"'()").lower()
-    if not word or len(word) < 2:
+    if not word or len(word) < 2 or word in STOP_WORDS or not word.isalpha():
         return None, "empty"
     c = db.conn()
     row = c.execute("SELECT id, translation FROM words WHERE word=? COLLATE NOCASE",
@@ -77,6 +87,19 @@ def new_words_left():
 def do_unknown(row):
     card = ai.explain(row["word"], row["note"] or "")
     c = db.conn()
+
+    # Модель возвращает словарную форму: клик по «dropped» даёт «drop»,
+    # а оно может уже быть в словаре. Тогда заготовку удаляем — иначе
+    # UPDATE упрётся в уникальность слова.
+    twin = c.execute("SELECT id FROM words WHERE word=? COLLATE NOCASE AND id!=?",
+                     (card["word"], row["id"])).fetchone()
+    if twin:
+        c.execute("DELETE FROM words WHERE id=?", (row["id"],))
+        c.commit()
+        log.info("«%s» — это форма слова «%s», оно уже есть в словаре",
+                 row["word"], card["word"])
+        return 0
+
     c.execute("""UPDATE words SET word=?, translation=?, ipa=?, v2=?, v3=?, ipa2=?, ipa3=?,
                  example_en=?, example_ru=?, enriched=1 WHERE id=?""",
               (card["word"], card["translation"], card["ipa"], card["v2"], card["v3"],

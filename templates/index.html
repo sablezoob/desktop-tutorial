@@ -166,6 +166,9 @@
     <div class="xaxis" id="forecastaxis"></div>
     <div class="hint" id="forecasthint"></div>
 
+    <h2>Отмеченные слова — ждут перевода</h2>
+    <div id="queue"></div>
+
     <h2>Тренировки</h2>
     <div id="trainstat"></div>
 
@@ -436,6 +439,7 @@ async function loadStats(){
          Слово становится выученным после двух ответов «Знаю».</td></tr>`;
 
   loadTrainStats();
+  loadQueue();
   $("#live").textContent = `готово к показу: ${s.due_now}`;
 }
 
@@ -450,6 +454,61 @@ function drawBars(barsSel, axisSel, values, labels, everyNth, warm){
 
 const MODE_NAMES = {selftest:"самопроверка", quiz:"квиз", forms:"формы глагола",
                     type:"угадай", show:"просмотр"};
+
+async function loadQueue(){
+  const d = await (await fetch("/api/queue")).json();
+  const box = $("#queue");
+  if (!d.items.length){
+    box.innerHTML = `<div class="hint">Пусто. Кликните по незнакомому слову
+      прямо в примере на карточке — оно попадёт сюда, а потом в изучение.</div>`;
+    return;
+  }
+  const rows = d.items.map(w => `<tr data-id="${w.id}">
+      <td class="w">${esc(w.word)}</td>
+      <td class="hint">${esc((w.note || "").slice(0, 60))}</td>
+      <td><input class="qtr" placeholder="перевод" style="min-width:150px"></td>
+      <td><input class="qipa" placeholder="/транскрипция/" style="min-width:120px"></td>
+      <td style="white-space:nowrap">
+        <button class="ghost" onclick="saveQueue(${w.id})">Сохранить</button>
+        <button class="ghost" onclick="dropQueue(${w.id})" title="Убрать из очереди">✕</button>
+      </td></tr>`).join("");
+  box.innerHTML = `
+    <div class="hint" style="margin-bottom:8px">
+      Эти слова вы отметили в примерах. Нейросеть переводит их сама, но пока она
+      занята или недоступна — впишите перевод руками, и слово сразу пойдёт в изучение.
+    </div>
+    <div class="tablewrap"><table><thead><tr>
+      <th>слово</th><th>где встретилось</th><th>перевод</th><th>транскрипция</th><th></th>
+    </tr></thead><tbody>${rows}</tbody></table></div>
+    <div style="margin-top:12px">
+      <button class="act" onclick="runQueue()">Разобрать нейросетью сейчас</button>
+      <span id="qmsg" class="hint"></span>
+    </div>`;
+}
+
+async function saveQueue(id){
+  const tr = document.querySelector(`tr[data-id="${id}"]`);
+  const body = JSON.stringify({translation: tr.querySelector(".qtr").value,
+                               ipa: tr.querySelector(".qipa").value});
+  const r = await (await fetch("/api/queue/" + id, {method:"POST",
+    headers:{"Content-Type":"application/json"}, body})).json();
+  if (r.ok) { loadQueue(); loadStats(); }
+  else $("#qmsg").innerHTML = `<span class="bad">${esc(r.error || "не вышло")}</span>`;
+}
+
+async function dropQueue(id){
+  await fetch("/api/queue/" + id, {method:"DELETE"});
+  loadQueue();
+}
+
+async function runQueue(){
+  $("#qmsg").textContent = "разбираю, это может занять до минуты…";
+  const r = await (await fetch("/api/queue/run", {method:"POST"})).json();
+  $("#qmsg").innerHTML = r.errors && r.errors.length
+    ? `<span class="bad">${esc(r.errors[0])}</span>`
+    : `<span class="ok">разобрано: ${r.done}</span>`;
+  loadQueue();
+}
 
 async function loadTrainStats(){
   const d = await (await fetch("/api/sessions")).json();

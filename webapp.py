@@ -185,6 +185,60 @@ def api_sessions():
     })
 
 
+@app.get("/api/queue")
+def api_queue():
+    """Слова, отмеченные кликом, но ещё без перевода."""
+    rows = [dict(r) for r in db.conn().execute(
+        """SELECT id, word, note, datetime(created_at,'localtime') at
+           FROM words WHERE translation = '' ORDER BY created_at""")]
+    return jsonify({"items": rows, "ai_enabled": ai.is_enabled()})
+
+
+@app.post("/api/queue/<int:wid>")
+def api_queue_fill(wid):
+    """Перевод вручную — чтобы слово не ждало, пока освободится нейросеть."""
+    d = request.get_json(force=True) or {}
+    tr = (d.get("translation") or "").strip()
+    if not tr:
+        return jsonify({"ok": False, "error": "нужен перевод"}), 400
+    c = db.conn()
+    row = c.execute("SELECT word FROM words WHERE id=?", (wid,)).fetchone()
+    if not row:
+        return jsonify({"ok": False, "error": "слово не найдено"}), 404
+    c.execute("UPDATE words SET translation=?, ipa=?, enriched=1 WHERE id=?",
+              (tr, (d.get("ipa") or "").strip(), wid))
+    c.commit()
+    return jsonify({"ok": True, "word": row["word"]})
+
+
+@app.delete("/api/queue/<int:wid>")
+def api_queue_drop(wid):
+    c = db.conn()
+    c.execute("DELETE FROM words WHERE id=? AND translation=''", (wid,))
+    c.commit()
+    return jsonify({"ok": True})
+
+
+@app.post("/api/queue/run")
+def api_queue_run():
+    """Разобрать очередь прямо сейчас, не дожидаясь фонового помощника."""
+    if not ai.is_enabled():
+        return jsonify({"ok": False, "error": "нейросеть выключена в настройках"}), 400
+    rows = aiworker.pending_unknown(3)
+    if not rows:
+        return jsonify({"ok": True, "done": 0, "message": "очередь пуста"})
+    done, errors = 0, []
+    for row in rows:
+        try:
+            done += aiworker.do_unknown(row)
+        except ai.RateLimited:
+            errors.append("сервис ограничил частоту запросов — попробуйте позже")
+            break
+        except Exception as e:
+            errors.append(f"{row['word']}: {type(e).__name__}")
+    return jsonify({"ok": True, "done": done, "errors": errors})
+
+
 @app.get("/api/decks")
 def api_decks():
     tags = {}

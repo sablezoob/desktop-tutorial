@@ -141,3 +141,38 @@ def test_service_words_rejected_at_data_level(fresh_db):
 def test_card_and_queue_share_stop_words():
     import popup
     assert popup.Popup.STOP_WORDS is aiworker.STOP_WORDS
+
+
+def test_queue_can_be_filled_by_hand(client, fresh_db):
+    """Нейросеть может быть занята или выключена — слово не должно
+    застревать в очереди навсегда."""
+    wid, _ = aiworker.queue_unknown("doorbell", "They have rung the doorbell.")
+    assert [w["word"] for w in client.get("/api/queue").get_json()["items"]] == ["doorbell"]
+
+    r = client.post(f"/api/queue/{wid}", json={"translation": "дверной звонок",
+                                               "ipa": "/ˈdɔːbel/"})
+    assert r.get_json()["ok"]
+    row = fresh_db.conn().execute("SELECT translation, ipa FROM words WHERE id=?",
+                                  (wid,)).fetchone()
+    assert row["translation"] == "дверной звонок" and row["ipa"] == "/ˈdɔːbel/"
+    assert client.get("/api/queue").get_json()["items"] == [], "слово ушло из очереди"
+
+
+def test_queue_rejects_empty_translation(client, fresh_db):
+    wid, _ = aiworker.queue_unknown("doorbell", "ctx")
+    assert client.post(f"/api/queue/{wid}", json={"translation": "  "}).status_code == 400
+
+
+def test_queue_item_can_be_dropped(client, fresh_db):
+    wid, _ = aiworker.queue_unknown("doorbell", "ctx")
+    assert client.delete(f"/api/queue/{wid}").get_json()["ok"]
+    assert client.get("/api/queue").get_json()["items"] == []
+
+
+def test_filled_word_starts_showing(client, fresh_db, words):
+    """Пока перевода нет, слово не показывается; как только появился — идёт в показ."""
+    import srs
+    wid, _ = aiworker.queue_unknown("doorbell", "ctx")
+    assert "doorbell" not in {srs.next_word()["word"] for _ in range(40)}
+    client.post(f"/api/queue/{wid}", json={"translation": "дверной звонок"})
+    assert "doorbell" in {srs.next_word()["word"] for _ in range(120)}

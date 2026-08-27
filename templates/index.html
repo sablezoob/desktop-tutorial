@@ -7,9 +7,9 @@
 <link rel="stylesheet" href="/theme.css">
 <style>
   *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--tx);
+  body{margin:0;background:var(--bg);color:var(--text);
        font:14px/1.5 "Segoe UI",system-ui,sans-serif}
-  a{color:var(--acc)}
+  a{color:var(--accent)}
   header{display:flex;align-items:center;gap:18px;padding:16px 26px;
          background:var(--panel);border-bottom:1px solid var(--line);
          position:sticky;top:0;z-index:10;flex-wrap:wrap}
@@ -17,8 +17,8 @@
   nav{display:flex;gap:4px;margin-left:auto;flex-wrap:wrap}
   nav button{background:transparent;border:1px solid transparent;color:var(--dim);
              padding:7px 15px;border-radius:8px;cursor:pointer;font-size:14px}
-  nav button:hover{color:var(--tx);background:var(--panel2)}
-  nav button.on{background:var(--acc);color:#fff;border-color:var(--acc)}
+  nav button:hover{color:var(--text);background:var(--panel2)}
+  nav button.on{background:var(--accentFill);color:#fff;border-color:var(--accentFill)}
   main{padding:24px 26px;max-width:1180px;margin:0 auto}
   .tab{display:none} .tab.on{display:block}
   .grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
@@ -26,41 +26,41 @@
   .card .n{font-size:29px;font-weight:600;line-height:1.15}
   .card .l{color:var(--dim);font-size:12px;text-transform:uppercase;letter-spacing:.5px}
   h2{font-size:15px;font-weight:600;margin:28px 0 12px;color:var(--dim)}
-  textarea,input,select{width:100%;background:var(--panel2);color:var(--tx);
+  textarea,input,select{width:100%;background:var(--panel2);color:var(--text);
         border:1px solid var(--line);border-radius:8px;padding:9px 11px;
         font:14px/1.5 "Segoe UI",sans-serif}
   textarea{min-height:230px;font-family:"Cascadia Mono",Consolas,monospace;font-size:13px;resize:vertical}
-  input:focus,textarea:focus,select:focus{outline:none;border-color:var(--acc)}
+  input:focus,textarea:focus,select:focus{outline:none;border-color:var(--accent)}
   label{display:block;color:var(--dim);font-size:12px;margin:0 0 5px}
   .row{display:flex;gap:12px;flex-wrap:wrap;align-items:flex-end}
-  .row>div{flex:1;min-width:150px}
-  button.act{background:var(--acc);border:none;color:#fff;padding:10px 20px;
+  .row>div{flex:1;min-width:190px}
+  button.act{background:var(--accentFill);border:none;color:#fff;padding:10px 20px;
              border-radius:8px;cursor:pointer;font-size:14px;font-weight:500}
   button.act:hover{filter:brightness(1.12)}
   button.ghost{background:var(--panel2);border:1px solid var(--line);color:var(--dim);
                padding:7px 13px;border-radius:7px;cursor:pointer;font-size:13px}
-  button.ghost:hover{color:var(--tx);border-color:var(--acc)}
+  button.ghost:hover{color:var(--text);border-color:var(--accent)}
   .tablewrap{width:100%;overflow-x:auto}
   table{width:100%;border-collapse:collapse;margin-top:10px;min-width:520px}
-  th{text-align:left;color:var(--mut);font-size:11px;text-transform:uppercase;
+  th{text-align:left;color:var(--muted);font-size:11px;text-transform:uppercase;
      letter-spacing:.5px;padding:8px 10px;border-bottom:1px solid var(--line);font-weight:500}
   td{padding:9px 10px;border-bottom:1px solid #22262f;vertical-align:top}
   tr:hover td{background:#1a1e26}
   .w{font-weight:600;font-size:15px}
   .ipa{color:#7fd4ff;font-size:13px}
   .tr{color:#ffd479}
-  .ex{color:var(--mut);font-size:12px;font-style:italic}
+  .ex{color:var(--muted);font-size:12px;font-style:italic}
   .pill{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;
         border:1px solid var(--line);color:var(--dim)}
   .pill.new{border-color:#2c4a7a;color:#8ab4ff}
   .pill.learning{border-color:#7a5b2c;color:var(--warn)}
   .pill.learned{border-color:#2c6b49;color:var(--ok)}
-  .pill.suspended{border-color:#4a4a4a;color:var(--mut)}
+  .pill.suspended{border-color:#4a4a4a;color:var(--muted)}
   .heat{display:flex;gap:3px;flex-wrap:wrap;margin-top:8px}
   .heat i{width:15px;height:15px;border-radius:3px;background:#20242d;display:block}
-  .hint{color:var(--mut);font-size:12px;margin-top:6px}
+  .hint{color:var(--muted);font-size:12px;margin-top:6px}
   .ok{color:var(--ok)} .bad{color:var(--bad)}
-  .empty{color:var(--mut);padding:32px;text-align:center}
+  .empty{color:var(--muted);padding:32px;text-align:center}
   code{background:var(--panel2);padding:1px 5px;border-radius:4px;font-size:12px;color:#9ecbff}
 
   /* цель дня */
@@ -78,26 +78,26 @@
   .deck{margin-bottom:12px}
   .deck .dh{display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px}
   .deck .dh b{font-weight:600}
-  .deck .dh span{color:var(--mut);font-size:12px}
+  .deck .dh span{color:var(--muted);font-size:12px}
   .pbar{display:flex;height:9px;border-radius:5px;overflow:hidden;background:#20242d}
   .pbar i{display:block;height:100%}
   .pbar .learned{background:var(--ok)} .pbar .learning{background:var(--warn)}
   .pbar .new{background:#2c3444}
-  .legend{display:flex;gap:16px;color:var(--mut);font-size:11px;margin:6px 0 18px}
+  .legend{display:flex;gap:16px;color:var(--muted);font-size:11px;margin:6px 0 18px}
   .legend s{text-decoration:none;display:inline-flex;align-items:center;gap:5px}
   .legend i{width:9px;height:9px;border-radius:2px;display:inline-block}
 
   /* столбчатые графики */
   .bars{display:flex;align-items:flex-end;gap:3px;height:90px;margin-top:8px}
-  .bars .b{flex:1;background:var(--acc);border-radius:2px 2px 0 0;min-height:2px;position:relative}
+  .bars .b{flex:1;background:var(--accent);border-radius:2px 2px 0 0;min-height:2px;position:relative}
   .bars .b.warm{background:var(--warn)}
-  .xaxis{display:flex;gap:3px;margin-top:5px;color:var(--mut);font-size:10px}
+  .xaxis{display:flex;gap:3px;margin-top:5px;color:var(--muted);font-size:10px}
   .xaxis span{flex:1;text-align:center}
 
   /* распределение ответов */
   .split{display:flex;height:26px;border-radius:7px;overflow:hidden;margin-top:8px}
   .split i{display:flex;align-items:center;justify-content:center;font-size:11px;color:#0d1117;font-weight:600}
-  .split .know{background:var(--ok)} .split .again{background:var(--warn)} .split .skip{background:#39404e;color:var(--dim)}
+  .split .know{background:var(--ok)} .split .again{background:var(--warn)} .split .skip{background:#39404e;color:#cbd3e0}
 
   /* узкие окна и телефон: шапка в две строки, поля на всю ширину */
   @media (max-width: 760px){
@@ -126,7 +126,7 @@
     <button data-t="words">Слова</button>
     <button data-t="add">Добавить</button>
     <button data-t="set">Настройки</button>
-    <a href="/train" style="background:var(--acc);color:#fff;padding:7px 16px;border-radius:8px;
+    <a href="/train" style="background:var(--accentFill);color:#fff;padding:7px 16px;border-radius:8px;
        margin-left:8px;font-size:14px">Тренировка →</a>
   </nav>
 </header>

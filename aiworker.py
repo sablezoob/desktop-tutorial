@@ -12,7 +12,6 @@
 import logging
 import threading
 import time
-
 import ai
 import db
 
@@ -21,6 +20,11 @@ log = logging.getLogger("vocab.aiworker")
 IDLE_SLEEP = 25         # пауза, когда делать нечего
 ERROR_SLEEP = 120       # пауза после сбоя, чтобы не долбить неотвечающий сервис
 AI_TAG = "ai"           # тег слов, добавленных нейросетью
+BATCH = 5               # слов в одном запросе: параллельные запросы упираются
+                        # в 429, а один ответ на пятёрку идёт не дольше, чем
+                        # на одно слово — так вчетверо меньше обращений
+RATE_SLEEP = 90         # первая пауза, когда сервис просит сбавить темп
+RATE_SLEEP_MAX = 1800   # дальше пауза удваивается: квота бывает часовой
 
 
 # ------------------------------------------------------------------ очередь
@@ -84,13 +88,22 @@ def do_unknown(row):
     return 1
 
 
-def do_sentences(row):
-    want = max(1, db.get_int("ai_sentences_per_word", 4))
-    need = max(1, want - row["have"])
-    pairs = ai.make_sentences(row["word"], row["translation"], count=min(4, need + 1),
-                              forms=(row["v2"], row["v3"]))
-    added = sum(1 for en, ru in pairs if db.add_sentence(row["id"], en, ru, source="ai"))
-    log.info("Примеры для «%s»: +%d", row["word"], added)
+def do_sentences(rows):
+    """Примеры сразу для нескольких слов — одним запросом на всю пачку."""
+    if not isinstance(rows, (list, tuple)):
+        rows = [rows]
+    items = [{"word": r["word"], "translation": r["translation"],
+              "v2": r["v2"], "v3": r["v3"]} for r in rows]
+    by_word = {r["word"]: r for r in rows}
+    result = ai.make_sentences_batch(items, count=3)
+    added = 0
+    for word, pairs in result.items():
+        row = by_word.get(word)
+        if not row:
+            continue
+        n = sum(1 for en, ru in pairs if db.add_sentence(row["id"], en, ru, source="ai"))
+        added += n
+        log.info("Примеры для «%s»: +%d", word, n)
     return added
 
 
@@ -126,15 +139,16 @@ def step():
         do_new_words()
         return True
 
-    rows = words_needing_sentences(1)
+    rows = words_needing_sentences(BATCH)
     if rows:
-        do_sentences(rows[0])
+        do_sentences(rows)
         return True
     return False
 
 
 def run():
     log.info("Фоновый помощник запущен")
+    rate_wait = RATE_SLEEP
     while True:
         try:
             if not ai.is_enabled():
@@ -142,6 +156,13 @@ def run():
                 continue
             if not step():
                 time.sleep(IDLE_SLEEP)
+            rate_wait = RATE_SLEEP          # получилось — сбрасываем ожидание
+        except ai.RateLimited as e:
+            # Квота у бесплатного тарифа бывает часовой: долбить её каждые
+            # полторы минуты бессмысленно, поэтому пауза удваивается.
+            log.warning("%s — жду %d с", e, rate_wait)
+            time.sleep(rate_wait)
+            rate_wait = min(rate_wait * 2, RATE_SLEEP_MAX)
         except ai.AiError as e:
             log.warning("Нейросеть недоступна: %s", e)
             time.sleep(ERROR_SLEEP)

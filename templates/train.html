@@ -4,12 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Тренировка — Vocab Popup</title>
+<link rel="stylesheet" href="/theme.css">
 <style>
-  :root{
-    --bg:#12151b; --panel:#191d25; --panel2:#1f242e; --line:#2b313d;
-    --tx:#e6eaf2; --dim:#8b93a5; --mut:#5b6272;
-    --acc:#3a86ff; --ok:#3ddc91; --warn:#ffb454; --bad:#ff6b6b;
-  }
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--tx);
        font:15px/1.55 "Segoe UI",system-ui,sans-serif}
@@ -176,13 +172,28 @@ document.querySelectorAll("#modes button").forEach(b => b.onclick = () => {
   mode = b.dataset.m;
 });
 
+if (ONLY === "unreviewed") {
+  fetch("/api/progress").then(r => r.json()).then(p => {
+    const box = document.createElement("div");
+    box.className = "hint";
+    box.style.cssText = "margin-bottom:14px;color:var(--warn);font-size:14px";
+    box.textContent = `Разбор накопленного: ${p.unreviewed} слов показывались, ` +
+                      `но так и не отмечены. Пройдите их — они сдвинутся с места.`;
+    document.querySelector("#setup").prepend(box);
+    document.querySelector("#deck").disabled = true;
+  });
+}
+
 fetch("/api/decks").then(r => r.json()).then(list => {
   $("#deck").innerHTML = '<option value="">все слова</option>' +
     list.map(([t,n]) => `<option value="${esc(t)}">${esc(t)} · ${n}</option>`).join("");
 });
 
+const ONLY = new URLSearchParams(location.search).get("only") || "";
+
 async function start(){
   const p = new URLSearchParams({deck: $("#deck").value, mode, limit: $("#limit").value});
+  if (ONLY) p.set("only", ONLY);
   cards = await (await fetch("/api/session?" + p)).json();
   if (!cards.length){
     alert(mode === "forms"

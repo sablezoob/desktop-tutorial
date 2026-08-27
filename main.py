@@ -26,6 +26,7 @@ from popup import Popup
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 LOG_PATH = os.path.join(BASE_DIR, "data", "app.log")
 DASHBOARD_URL = "http://127.0.0.1:8777/"
+REVIEW_URL = "http://127.0.0.1:8777/train?only=unreviewed"
 MUTEX_NAME = "VocabPopup_SingleInstance_Mutex"
 
 log = logging.getLogger("vocab")
@@ -39,6 +40,10 @@ def setup_logging():
     root = logging.getLogger()
     root.setLevel(logging.INFO)
     root.addHandler(h)
+    # Клиент нейросети пишет по строке на каждый запрос и повтор — в журнале
+    # это заслоняет собственные сообщения приложения.
+    for noisy in ("httpx", "httpcore", "openai", "werkzeug"):
+        logging.getLogger(noisy).setLevel(logging.WARNING)
 
     def hook(exc_type, exc, tb):
         log.critical("Необработанная ошибка", exc_info=(exc_type, exc, tb))
@@ -123,12 +128,15 @@ class App:
         self.popup = Popup()
         self.popup.answered.connect(self.on_answer)
         self.popup.unknown_word.connect(self.on_unknown_word)
+        self._message_url = DASHBOARD_URL
         self._skip_reason = None
         self._interval_min = 3
         self._due_at = 0.0
+        self._review_offered_on = None      # дата последнего предложения разобрать
 
         self.tray = QSystemTrayIcon(make_icon("A"))
         self.tray.activated.connect(self.on_tray_click)
+        self.tray.messageClicked.connect(self.on_message_clicked)
 
         self.hk_labels = hotkeys.register(self.qt, self.on_hotkey)
         self.qt.aboutToQuit.connect(hotkeys.unregister)
@@ -195,6 +203,10 @@ class App:
 
         m.addSeparator()
 
+        a_review = QAction("Разобрать накопленное…", m)
+        a_review.triggered.connect(lambda: webbrowser.open(REVIEW_URL))
+        m.addAction(a_review)
+
         a_dash = QAction("Дашборд и слова…", m)
         a_dash.triggered.connect(lambda: webbrowser.open(DASHBOARD_URL))
         m.addAction(a_dash)
@@ -211,6 +223,37 @@ class App:
 
         self.menu = m
         self.tray.setContextMenu(m)
+
+    def on_message_clicked(self):
+        """Клик по уведомлению открывает то, ради чего оно показано."""
+        webbrowser.open(self._message_url or DASHBOARD_URL)
+
+    def maybe_offer_review(self):
+        """Показы без ответа — главная утечка: слово мелькнуло и не сдвинулось.
+
+        Когда таких накопилось много, один раз в день предлагаем разобрать
+        их пачкой — это ровно та тренировка, которой не хватало входа.
+        """
+        if db.get("review_prompt_enabled", "1") != "1":
+            return
+        today = datetime.now().strftime("%Y-%m-%d")
+        if self._review_offered_on == today:
+            return
+        try:
+            n = srs.unreviewed_count()
+        except Exception:
+            log.exception("Не удалось посчитать непроверенные слова")
+            return
+        if n < max(1, db.get_int("review_threshold", 25)):
+            return
+        self._review_offered_on = today
+        self._message_url = REVIEW_URL
+        self.tray.showMessage(
+            "Пора закрепить",
+            f"{n} слов показались, но остались неотмеченными. "
+            "Нажмите, чтобы разобрать их за пару минут.",
+            QSystemTrayIcon.Information, 9000)
+        log.info("Предложен разбор накопленного: %s слов", n)
 
     def on_tray_click(self, reason):
         if reason == QSystemTrayIcon.Trigger:      # левый клик
@@ -257,6 +300,7 @@ class App:
         if time.monotonic() >= self._due_at:
             self._due_at = time.monotonic() + want * 60
             self.show_next()
+            self.maybe_offer_review()
 
     def note_skip(self, reason):
         """Пишет в лог смену причины молчания — иначе непонятно, почему нет карточек."""

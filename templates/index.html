@@ -4,12 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Vocab Popup</title>
+<link rel="stylesheet" href="/theme.css">
 <style>
-  :root{
-    --bg:#12151b; --panel:#191d25; --panel2:#1f242e; --line:#2b313d;
-    --tx:#e6eaf2; --dim:#8b93a5; --mut:#5b6272;
-    --acc:#3a86ff; --ok:#3ddc91; --warn:#ffb454; --bad:#ff6b6b;
-  }
   *{box-sizing:border-box}
   body{margin:0;background:var(--bg);color:var(--tx);
        font:14px/1.5 "Segoe UI",system-ui,sans-serif}
@@ -66,6 +62,17 @@
   .ok{color:var(--ok)} .bad{color:var(--bad)}
   .empty{color:var(--mut);padding:32px;text-align:center}
   code{background:var(--panel2);padding:1px 5px;border-radius:4px;font-size:12px;color:#9ecbff}
+
+  /* цель дня */
+  .goal{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+        padding:16px 18px;margin-bottom:14px;display:flex;gap:18px;align-items:center;flex-wrap:wrap}
+  .goal .big{font-size:26px;font-weight:600}
+  .goal .gbar{flex:1;min-width:180px;height:10px;background:#20242d;border-radius:5px;overflow:hidden}
+  .goal .gbar i{display:block;height:100%;background:var(--ok);border-radius:5px}
+  .goal .streak{color:var(--warn);font-size:14px}
+  .goal a{background:var(--warn);color:#1c1f26;padding:8px 16px;border-radius:8px;
+          font-size:14px;font-weight:600;text-decoration:none}
+  .goal a:hover{filter:brightness(1.1)}
 
   /* прогресс по колодам */
   .deck{margin-bottom:12px}
@@ -127,6 +134,7 @@
 <main>
   <!-- ============ СТАТИСТИКА ============ -->
   <section class="tab on" id="tab-stat">
+    <div id="goalbox"></div>
     <div class="grid" id="tiles"></div>
 
     <h2>Активность за 30 дней</h2>
@@ -210,6 +218,13 @@ autumn | осень"></textarea>
     </div>
     <div style="margin-top:14px"><button class="act" onclick="doImport()">Добавить в словарь</button>
       <span id="imp" class="hint"></span></div>
+
+    <h2>Выгрузка словаря</h2>
+    <div class="hint">Файл CSV с разделителем-табуляцией: слово, перевод, транскрипция,
+      формы глагола, пример и текущий статус. Открывается в Anki, Excel и Google Таблицах —
+      прогресс не заперт в одном приложении.</div>
+    <div style="margin-top:10px"><a class="act" href="/export.csv"
+      style="text-decoration:none;display:inline-block">Скачать CSV</a></div>
   </section>
 
   <!-- ============ НАСТРОЙКИ ============ -->
@@ -230,6 +245,16 @@ autumn | осень"></textarea>
         <option value="bottom-right">Снизу справа</option>
       </select></div>
       <div><label>Отступ от края, px</label><input id="s_margin" type="number" min="0" max="600"></div>
+      <div><label>Озвучка</label><select id="s_tts">
+        <option value="0">выключена</option>
+        <option value="1">включена — кнопка на карточке</option>
+      </select></div>
+      <div><label>Голос</label><select id="s_voice">
+        <option value="uk-female">британский женский</option>
+        <option value="uk-male">британский мужской</option>
+        <option value="us-female">американский женский</option>
+        <option value="us-male">американский мужской</option>
+      </select></div>
       <div><label>Размер карточки</label><select id="s_scale">
         <option value="auto">авто — по размеру экрана</option>
         <option value="0.85">компактный</option>
@@ -241,6 +266,9 @@ autumn | осень"></textarea>
         <input id="s_focus" placeholder="пусто = весь словарь"></div>
       <div><label>«Выучено» после N ответов «Знаю»</label>
         <input id="s_know" type="number" min="1" max="10"></div>
+      <div><label>Цель на день, слов</label><input id="s_goal" type="number" min="0" max="100"></div>
+      <div><label>Звать на разбор, если накопилось</label>
+        <input id="s_rev" type="number" min="5" max="200"></div>
       <div><label>Повторять выученные</label><select id="s_review">
         <option value="0">нет — больше не показывать</option>
         <option value="1">да — изредка для контроля</option>
@@ -312,7 +340,15 @@ const STATUS_RU = {new:"новое", learning:"в работе", learned:"выу
 
 async function loadStats(){
   const d = await (await fetch("/api/stats")).json(), s = d.stats;
-  const e = d.extra;
+  const e = d.extra, g = e.goal || {goal:0, done:0, streak:0};
+  const pct = g.goal ? Math.min(100, g.done / g.goal * 100) : 0;
+  $("#goalbox").innerHTML = `<div class="goal">
+      <div><div class="big ${g.reached ? "ok" : ""}">${g.done} / ${g.goal}</div>
+           <div class="l">цель на сегодня</div></div>
+      <div class="gbar"><i style="width:${pct}%"></i></div>
+      ${g.streak ? `<div class="streak">серия: ${g.streak} дн.</div>` : ""}
+      ${e.unreviewed > 0 ? `<a href="/train?only=unreviewed">Разобрать ${e.unreviewed} слов →</a>` : ""}
+    </div>`;
   const sec = ms => ms ? (ms/1000).toFixed(1) + " с" : "—";
   const tiles = [
     ["Всего слов", s.total, ""], ["Выучено", s.learned, "ok"],
@@ -320,6 +356,8 @@ async function loadStats(){
     ["Выучено сегодня", e.learned_today, "ok"], ["Выучено за неделю", e.learned_week, "ok"],
     ["Ответов сегодня", e.answers_today, ""], ["Показов сегодня", s.shown_today, ""],
     ["Ждут повтора", e.due_today, ""], ["Слов затронуто", e.words_touched, ""],
+    ["Показаны, но не отмечены", e.unreviewed, e.unreviewed > 20 ? "warn" : ""],
+    ["Ни разу не показывались", e.never_shown, ""],
     ["Среднее время ответа", sec(e.avg_answer_ms), ""],
     ["Показов всего", s.shown_total, ""],
   ];
@@ -451,7 +489,11 @@ async function loadSet(){
   $("#s_hide").value = s.hide_translation_ms; $("#s_corner").value = s.corner;
   $("#s_margin").value = s.margin_px; $("#s_focus").value = s.focus_tag;
   $("#s_scale").value = s.card_scale || "auto";
+  $("#s_tts").value = s.tts_enabled || "0";
+  $("#s_voice").value = s.tts_voice || "uk-female";
   $("#s_know").value = s.know_to_learn || "2";
+  $("#s_goal").value = s.daily_goal || "5";
+  $("#s_rev").value = s.review_threshold || "25";
   $("#s_review").value = s.review_learned || "0";
   $("#s_qfrom").value = s.quiet_from; $("#s_qto").value = s.quiet_to;
   $("#s_qen").value = s.quiet_enabled; $("#s_paused").value = s.paused;
@@ -497,7 +539,9 @@ async function saveSet(){
     hide_translation_ms:$("#s_hide").value, corner:$("#s_corner").value,
     margin_px:$("#s_margin").value, focus_tag:$("#s_focus").value,
     card_scale:$("#s_scale").value,
+    tts_enabled:$("#s_tts").value, tts_voice:$("#s_voice").value,
     know_to_learn:$("#s_know").value, review_learned:$("#s_review").value,
+    daily_goal:$("#s_goal").value, review_threshold:$("#s_rev").value,
     quiet_from:$("#s_qfrom").value, quiet_to:$("#s_qto").value,
     quiet_enabled:$("#s_qen").value, paused:$("#s_paused").value,
     ai_enabled:$("#s_ai").value, ai_key:$("#s_aikey").value,

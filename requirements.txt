@@ -2,3 +2,7 @@ PySide6-Essentials>=6.6
 Flask>=3.0
 requests>=2.31
 openai>=1.40
+edge-tts>=6.1
+
+# для запуска тестов: python -m pytest tests/
+pytest>=8.0

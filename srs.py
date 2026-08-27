@@ -242,6 +242,65 @@ def next_word():
 LOCAL_DAY = "substr(datetime(shown_at, 'localtime'), 1, 10)"
 
 
+def unreviewed_count():
+    """Сколько слов показывалось, но так и не получило ответа.
+
+    Именно они — главная утечка: карточка мелькнула, слово не сдвинулось.
+    Когда их набирается много, стоит предложить разобрать пачку за раз.
+    """
+    return db.conn().execute(
+        """SELECT COUNT(*) FROM words w JOIN srs s ON s.word_id = w.id
+           WHERE s.reps = 0 AND s.status != 'suspended' AND w.translation != ''
+             AND EXISTS (SELECT 1 FROM events e WHERE e.word_id = w.id)""").fetchone()[0]
+
+
+def unreviewed_words(limit=20):
+    """Те же слова списком — для разбора: сперва показанные чаще всего."""
+    return db.conn().execute(
+        """SELECT w.*, s.status, s.due_at,
+                  (SELECT COUNT(*) FROM events e WHERE e.word_id = w.id) shows
+           FROM words w JOIN srs s ON s.word_id = w.id
+           WHERE s.reps = 0 AND s.status != 'suspended' AND w.translation != ''
+             AND EXISTS (SELECT 1 FROM events e WHERE e.word_id = w.id)
+           ORDER BY shows DESC, s.due_at LIMIT ?""", (limit,)).fetchall()
+
+
+def never_shown_count():
+    return db.conn().execute(
+        """SELECT COUNT(*) FROM words w
+           WHERE w.translation != ''
+             AND NOT EXISTS (SELECT 1 FROM events e WHERE e.word_id = w.id)""").fetchone()[0]
+
+
+def goal_progress():
+    """Цель дня и серия дней подряд, когда цель была взята."""
+    goal = max(0, db.get_int("daily_goal", 5))
+    c = db.conn()
+    today = datetime.now().strftime("%Y-%m-%d")
+    done = c.execute(
+        f"SELECT COUNT(DISTINCT word_id) FROM events WHERE action='know' AND {LOCAL_DAY}=?",
+        (today,)).fetchone()[0]
+
+    by_day = {r["d"]: r["n"] for r in c.execute(
+        f"""SELECT {LOCAL_DAY} d, COUNT(DISTINCT word_id) n FROM events
+            WHERE action='know' GROUP BY d""")}
+    streak = 0
+    day = datetime.now()
+    while goal > 0:
+        key = day.strftime("%Y-%m-%d")
+        hit = by_day.get(key, 0) >= goal
+        if not hit:
+            # сегодняшний день ещё не закончен — он не рвёт серию
+            if key == today:
+                day -= timedelta(days=1)
+                continue
+            break
+        streak += 1
+        day -= timedelta(days=1)
+    return {"goal": goal, "done": done, "streak": streak,
+            "reached": goal > 0 and done >= goal}
+
+
 def session_words(limit=20, tag="", only_verbs=False):
     """Набор карточек для тренировки: сперва просроченные, затем новые.
 

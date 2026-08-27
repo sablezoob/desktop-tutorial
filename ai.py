@@ -22,6 +22,11 @@ class AiError(RuntimeError):
     pass
 
 
+class RateLimited(AiError):
+    """Сервис просит подождать: параллельные запросы на бесплатном тарифе
+    упираются в 429, поэтому воркер работает в один поток и делает паузу."""
+
+
 def is_enabled():
     return db.get("ai_enabled", "0") == "1" and bool((db.get("ai_key", "") or "").strip())
 
@@ -41,6 +46,15 @@ def _client():
 def _ask(prompt, max_tokens=MAX_TOKENS, temperature=0.8):
     """Один запрос к модели. Возвращает текст ответа."""
     client = _client()
+    try:
+        return _call(client, prompt, max_tokens, temperature)
+    except Exception as e:
+        if type(e).__name__ == "RateLimitError" or "429" in str(e):
+            raise RateLimited("сервис ограничил частоту запросов") from e
+        raise
+
+
+def _call(client, prompt, max_tokens, temperature):
     r = client.chat.completions.create(
         model=db.get("ai_model") or "deepseek-ai/deepseek-v4-pro-0813",
         messages=[{"role": "user", "content": prompt}],
@@ -108,6 +122,67 @@ Requirements:
     if not out:
         log.warning("Все примеры для «%s» отброшены: %s", word, dropped[:3])
         raise AiError(f"в примерах нет слова «{word}»")
+    return out
+
+
+def make_sentences_batch(items, count=3, grammar=None, level=None):
+    """Примеры сразу для нескольких слов одним запросом.
+
+    Так вчетверо меньше обращений: свободный тариф не даёт слать запросы
+    параллельно (отвечает 429), а один ответ на пять слов занимает столько же
+    времени, сколько ответ на одно.
+
+    items — список словарей: word, translation, v2, v3.
+    Возвращает {word: [(en, ru), ...]}.
+    """
+    grammar = grammar or db.get("ai_grammar") or "Present Perfect"
+    level = level or db.get("ai_level") or "A2-B1"
+    lines = []
+    for it in items:
+        forms = f' (forms: {it["v2"]}, {it["v3"]})' if it.get("v2") else ""
+        lines.append(f'- "{it["word"]}" = {it["translation"]}{forms}')
+    words_block = chr(10).join(lines)
+
+    prompt = f"""Return ONLY valid JSON, no markdown fences, no explanation:
+{{"items":[{{"word":"...","sentences":[{{"en":"...","ru":"..."}}]}}]}}
+
+For EACH word below generate {count} DIFFERENT natural English sentences.
+Words:
+{words_block}
+
+Requirements:
+- grammar: {grammar}
+- level: {level}
+- each sentence 5-11 words, everyday situations, no rare vocabulary
+- sentences for one word must differ in subject and situation
+- "ru" is an accurate natural Russian translation
+- keep "word" exactly as given"""
+    data = _json(_ask(prompt, max_tokens=MAX_TOKENS))
+
+    by_word = {}
+    for it in items:
+        by_word[it["word"].lower()] = it
+    out = {}
+    for entry in data.get("items", []):
+        name = (entry.get("word") or "").strip()
+        src = by_word.get(name.lower())
+        if not src:
+            continue
+        stems = {name.lower()[:4]}
+        for f in (src.get("v2"), src.get("v3")):
+            if f:
+                stems.add(f.split()[0].lower()[:4])
+        stems = {x for x in stems if len(x) >= 3}
+        pairs = []
+        for sent in entry.get("sentences", []):
+            en = (sent.get("en") or "").strip()
+            ru = (sent.get("ru") or "").strip()
+            if en and any(st in en.lower() for st in stems):
+                pairs.append((en, ru))
+        if pairs:
+            out[src["word"]] = pairs
+    if not out:
+        raise AiError("пакет примеров пуст")
     return out
 
 

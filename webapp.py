@@ -12,6 +12,7 @@ import aiworker
 import db
 import quiz
 import srs
+import theme
 
 app = Flask(__name__)
 
@@ -52,6 +53,12 @@ def index():
     return render_template("index.html")
 
 
+@app.get("/theme.css")
+def theme_css():
+    """Общая палитра для страниц — тот же источник, что и у карточки."""
+    return app.response_class(theme.css_vars(), mimetype="text/css")
+
+
 @app.get("/favicon.ico")
 def favicon():
     # заглушка, чтобы браузер не сыпал 404 в консоль
@@ -70,7 +77,11 @@ def api_session():
     mode = request.args.get("mode") or "selftest"
     limit = min(100, max(3, int(request.args.get("limit") or 20)))
 
-    rows = srs.session_words(limit=limit, tag=tag, only_verbs=(mode == "forms"))
+    if (request.args.get("only") or "") == "unreviewed":
+        # разбор накопленного: слова, которые мелькали, но ответа не получили
+        rows = srs.unreviewed_words(limit=limit)
+    else:
+        rows = srs.session_words(limit=limit, tag=tag, only_verbs=(mode == "forms"))
     out = []
     for r in rows:
         d = dict(r)
@@ -96,6 +107,17 @@ def api_answer():
     except sqlite3.IntegrityError:
         return jsonify({"ok": False, "error": "word deleted"}), 404
     return jsonify({"ok": True})
+
+
+@app.get("/api/progress")
+def api_progress():
+    """Цель дня, серия и сколько всего накопилось на разбор."""
+    return jsonify({
+        **srs.goal_progress(),
+        "unreviewed": srs.unreviewed_count(),
+        "never_shown": srs.never_shown_count(),
+        "threshold": db.get_int("review_threshold", 25),
+    })
 
 
 @app.get("/api/decks")
@@ -213,7 +235,10 @@ def extended_stats(c):
         "due_today": q("""SELECT COUNT(*) FROM srs WHERE status IN ('learning','learned')
                           AND due_at <= ?""", (now,)),
         "words_touched": q("SELECT COUNT(DISTINCT word_id) FROM events"),
+        "unreviewed": srs.unreviewed_count(),
+        "never_shown": srs.never_shown_count(),
     }
+    extra["goal"] = srs.goal_progress()
 
     # --- последние доведённые до конца ---
     recent_learned = [dict(r) for r in c.execute("""
@@ -343,6 +368,40 @@ def api_ai_test():
     except Exception as e:
         return jsonify({"ok": False, "error": f"{type(e).__name__}: {str(e)[:200]}",
                         "seconds": round(time.time() - t0, 1)})
+
+
+@app.get("/export.csv")
+def export_csv():
+    """Выгрузка словаря для Anki и других программ.
+
+    Формат — обычный CSV с разделителем-табуляцией: Anki читает его как есть,
+    первое поле лицевая сторона, второе оборот. Прогресс тоже в файле,
+    чтобы вместе со словами уезжала и история.
+    """
+    import csv
+    import io as _io
+
+    buf = _io.StringIO()
+    w = csv.writer(buf, delimiter=chr(9), lineterminator=chr(10))
+    w.writerow(["word", "translation", "ipa", "v2", "v3",
+                "example_en", "example_ru", "tags", "status", "reps"])
+    rows = db.conn().execute(
+        """SELECT w.word, w.translation, w.ipa, w.v2, w.v3, w.tags,
+                  COALESCE(s.status,'new') status, COALESCE(s.reps,0) reps,
+                  (SELECT text_en FROM sentences x WHERE x.word_id=w.id
+                    ORDER BY x.shown DESC LIMIT 1) ex_en,
+                  (SELECT text_ru FROM sentences x WHERE x.word_id=w.id
+                    ORDER BY x.shown DESC LIMIT 1) ex_ru
+           FROM words w LEFT JOIN srs s ON s.word_id = w.id
+           WHERE w.translation != '' ORDER BY w.word COLLATE NOCASE""")
+    for r in rows:
+        w.writerow([r["word"], r["translation"], r["ipa"], r["v2"], r["v3"],
+                    r["ex_en"] or "", r["ex_ru"] or "", r["tags"],
+                    r["status"], r["reps"]])
+    data = buf.getvalue()
+    return app.response_class(
+        data, mimetype="text/csv; charset=utf-8",
+        headers={"Content-Disposition": 'attachment; filename="vocab-popup.csv"'})
 
 
 @app.get("/api/settings")

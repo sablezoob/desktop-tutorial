@@ -143,7 +143,86 @@ def api_stats():
                 tags[t] = tags.get(t, 0) + 1
 
     return jsonify({"stats": s, "days": days, "hard": hard,
-                    "tags": sorted(tags.items(), key=lambda x: -x[1])})
+                    "tags": sorted(tags.items(), key=lambda x: -x[1]),
+                    **extended_stats(c)})
+
+
+def extended_stats(c):
+    """Срезы, которых не хватало: прогресс по колодам, прогноз, ритм ответов."""
+    today = datetime.now().strftime("%Y-%m-%d")
+    week_ago = (datetime.now() - timedelta(days=7)).strftime("%Y-%m-%d")
+    now = db.now_iso()
+    day = srs.LOCAL_DAY
+
+    # --- прогресс по каждой колоде ---
+    decks = {}
+    for r in c.execute("""SELECT w.tags, COALESCE(s.status,'new') st FROM words w
+                          LEFT JOIN srs s ON s.word_id = w.id WHERE w.tags != ''"""):
+        for t in r["tags"].split(","):
+            t = t.strip()
+            if not t:
+                continue
+            d = decks.setdefault(t, {"deck": t, "new": 0, "learning": 0, "learned": 0, "total": 0})
+            d[r["st"]] = d.get(r["st"], 0) + 1
+            d["total"] += 1
+    decks = sorted(decks.values(), key=lambda d: -d["total"])
+
+    # --- сколько слов доведено до «выучено» по дням ---
+    learned_days = []
+    running = 0
+    daily = {r["d"]: r["n"] for r in c.execute(
+        f"""SELECT {day} d, COUNT(DISTINCT word_id) n FROM events
+            WHERE action='know' GROUP BY d""")}
+    for i in range(29, -1, -1):
+        d = (datetime.now() - timedelta(days=i)).strftime("%Y-%m-%d")
+        running += daily.get(d, 0)
+        learned_days.append({"date": d, "count": daily.get(d, 0), "total": running})
+
+    # --- из чего складываются ответы ---
+    actions = {r["action"]: r["n"] for r in c.execute(
+        "SELECT action, COUNT(*) n FROM events GROUP BY action")}
+
+    # --- когда вы отвечаете: активность по часам ---
+    hours = [0] * 24
+    for r in c.execute(
+            "SELECT CAST(strftime('%H', datetime(shown_at,'localtime')) AS INT) h, COUNT(*) n "
+            "FROM events GROUP BY h"):
+        if r["h"] is not None:
+            hours[r["h"]] = r["n"]
+
+    # --- что созреет в ближайшие дни ---
+    forecast = []
+    for i in range(0, 7):
+        start = (datetime.now() + timedelta(days=i)).strftime("%Y-%m-%d")
+        n = c.execute(
+            f"""SELECT COUNT(*) FROM srs
+                WHERE status IN ('learning','learned')
+                  AND substr(datetime(due_at,'localtime'),1,10) = ?""", (start,)).fetchone()[0]
+        forecast.append({"date": start, "count": n})
+
+    q = lambda sql, p=(): c.execute(sql, p).fetchone()[0]
+    extra = {
+        "learned_today": q(f"""SELECT COUNT(*) FROM srs s WHERE s.status='learned'
+            AND s.word_id IN (SELECT word_id FROM events WHERE action='know' AND {day}=?)""", (today,)),
+        "learned_week": q(f"""SELECT COUNT(*) FROM srs s WHERE s.status='learned'
+            AND s.word_id IN (SELECT word_id FROM events WHERE action='know' AND {day}>=?)""", (week_ago,)),
+        "answers_today": q(f"SELECT COUNT(*) FROM events WHERE action IN ('know','again') AND {day}=?", (today,)),
+        "avg_answer_ms": q("SELECT COALESCE(AVG(ms_visible),0) FROM events WHERE action IN ('know','again') AND ms_visible > 300"),
+        "due_today": q("""SELECT COUNT(*) FROM srs WHERE status IN ('learning','learned')
+                          AND due_at <= ?""", (now,)),
+        "words_touched": q("SELECT COUNT(DISTINCT word_id) FROM events"),
+    }
+
+    # --- последние доведённые до конца ---
+    recent_learned = [dict(r) for r in c.execute("""
+        SELECT w.word, w.translation, w.tags, s.reps,
+               datetime(s.due_at,'localtime') next_at
+        FROM srs s JOIN words w ON w.id = s.word_id
+        WHERE s.status='learned' ORDER BY s.word_id DESC LIMIT 12""")]
+
+    return {"decks": decks, "learned_days": learned_days, "actions": actions,
+            "hours": hours, "forecast": forecast, "extra": extra,
+            "recent_learned": recent_learned}
 
 
 @app.get("/api/words")

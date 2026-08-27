@@ -67,6 +67,31 @@
   .empty{color:var(--mut);padding:32px;text-align:center}
   code{background:var(--panel2);padding:1px 5px;border-radius:4px;font-size:12px;color:#9ecbff}
 
+  /* прогресс по колодам */
+  .deck{margin-bottom:12px}
+  .deck .dh{display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px}
+  .deck .dh b{font-weight:600}
+  .deck .dh span{color:var(--mut);font-size:12px}
+  .pbar{display:flex;height:9px;border-radius:5px;overflow:hidden;background:#20242d}
+  .pbar i{display:block;height:100%}
+  .pbar .learned{background:var(--ok)} .pbar .learning{background:var(--warn)}
+  .pbar .new{background:#2c3444}
+  .legend{display:flex;gap:16px;color:var(--mut);font-size:11px;margin:6px 0 18px}
+  .legend s{text-decoration:none;display:inline-flex;align-items:center;gap:5px}
+  .legend i{width:9px;height:9px;border-radius:2px;display:inline-block}
+
+  /* столбчатые графики */
+  .bars{display:flex;align-items:flex-end;gap:3px;height:90px;margin-top:8px}
+  .bars .b{flex:1;background:var(--acc);border-radius:2px 2px 0 0;min-height:2px;position:relative}
+  .bars .b.warm{background:var(--warn)}
+  .xaxis{display:flex;gap:3px;margin-top:5px;color:var(--mut);font-size:10px}
+  .xaxis span{flex:1;text-align:center}
+
+  /* распределение ответов */
+  .split{display:flex;height:26px;border-radius:7px;overflow:hidden;margin-top:8px}
+  .split i{display:flex;align-items:center;justify-content:center;font-size:11px;color:#0d1117;font-weight:600}
+  .split .know{background:var(--ok)} .split .again{background:var(--warn)} .split .skip{background:#39404e;color:var(--dim)}
+
   /* узкие окна и телефон: шапка в две строки, поля на всю ширину */
   @media (max-width: 760px){
     header{padding:12px 14px;gap:10px}
@@ -108,13 +133,40 @@
     <div class="heat" id="heat"></div>
     <div class="hint">Насыщенность — сколько показов было в этот день.</div>
 
+    <h2>Прогресс по колодам</h2>
+    <div id="decks"></div>
+    <div class="legend">
+      <s><i style="background:var(--ok)"></i> выучено</s>
+      <s><i style="background:var(--warn)"></i> в работе</s>
+      <s><i style="background:#2c3444"></i> ещё не показывалось</s>
+    </div>
+
+    <h2>Как вы отвечаете</h2>
+    <div class="split" id="split"></div>
+    <div class="hint" id="splithint"></div>
+
+    <h2>Слов доведено до «знаю» по дням</h2>
+    <div class="bars" id="learnedbars"></div>
+    <div class="xaxis" id="learnedaxis"></div>
+
+    <h2>В какие часы вы занимаетесь</h2>
+    <div class="bars" id="hourbars"></div>
+    <div class="xaxis" id="houraxis"></div>
+
+    <h2>Что придёт на повтор</h2>
+    <div class="bars" id="forecastbars"></div>
+    <div class="xaxis" id="forecastaxis"></div>
+    <div class="hint" id="forecasthint"></div>
+
     <h2>Тяжёлые слова — чаще всего жмёшь «Ещё раз»</h2>
     <div class="tablewrap"><table id="hard"><thead><tr>
       <th>Слово</th><th>Перевод</th><th>Показов</th><th>Знаю</th><th>Ещё раз</th>
     </tr></thead><tbody></tbody></table></div>
 
-    <h2>Колоды</h2>
-    <div id="tags"></div>
+    <h2>Выучено — больше не показываются</h2>
+    <div class="tablewrap"><table id="learned"><thead><tr>
+      <th>Слово</th><th>Перевод</th><th>Колода</th><th>Верных ответов</th><th>Контроль</th>
+    </tr></thead><tbody></tbody></table></div>
   </section>
 
   <!-- ============ СЛОВА ============ -->
@@ -187,6 +239,12 @@ autumn | осень"></textarea>
       </select></div>
       <div><label>Фокус-колода (80% показов)</label>
         <input id="s_focus" placeholder="пусто = весь словарь"></div>
+      <div><label>«Выучено» после N ответов «Знаю»</label>
+        <input id="s_know" type="number" min="1" max="10"></div>
+      <div><label>Повторять выученные</label><select id="s_review">
+        <option value="0">нет — больше не показывать</option>
+        <option value="1">да — изредка для контроля</option>
+      </select></div>
     </div>
     <div class="row" style="margin-top:14px">
       <div><label>Тихие часы с</label><input id="s_qfrom" placeholder="23:00"></div>
@@ -230,11 +288,16 @@ const STATUS_RU = {new:"новое", learning:"в работе", learned:"выу
 
 async function loadStats(){
   const d = await (await fetch("/api/stats")).json(), s = d.stats;
+  const e = d.extra;
+  const sec = ms => ms ? (ms/1000).toFixed(1) + " с" : "—";
   const tiles = [
-    ["Всего слов", s.total, ""], ["Новых", s.new, ""],
-    ["В работе", s.learning, "warn"], ["Выучено", s.learned, "ok"],
-    ["Готовы к показу", s.due_now, ""], ["Показов сегодня", s.shown_today, ""],
-    ["«Знаю» сегодня", s.know_today, "ok"], ["Показов всего", s.shown_total, ""],
+    ["Всего слов", s.total, ""], ["Выучено", s.learned, "ok"],
+    ["В работе", s.learning, "warn"], ["Ещё не показывалось", s.new, ""],
+    ["Выучено сегодня", e.learned_today, "ok"], ["Выучено за неделю", e.learned_week, "ok"],
+    ["Ответов сегодня", e.answers_today, ""], ["Показов сегодня", s.shown_today, ""],
+    ["Ждут повтора", e.due_today, ""], ["Слов затронуто", e.words_touched, ""],
+    ["Среднее время ответа", sec(e.avg_answer_ms), ""],
+    ["Показов всего", s.shown_total, ""],
   ];
   $("#tiles").innerHTML = tiles.map(([l,n,c]) =>
     `<div class="card"><div class="n ${c}">${n}</div><div class="l">${l}</div></div>`).join("");
@@ -255,11 +318,68 @@ async function loadStats(){
      <td class="bad">${r.again_cnt}</td></tr>`).join("")
     : `<tr><td colspan="5" class="empty">Пока нет данных — статистика появится после первых показов.</td></tr>`;
 
-  $("#tags").innerHTML = d.tags.length
-    ? d.tags.map(([t,n]) => `<span class="pill" style="margin:3px 5px 3px 0">${esc(t)} · ${n}</span>`).join("")
-    : `<div class="hint">Колод пока нет. Тег задаётся при импорте.</div>`;
+  // --- прогресс по колодам ---
+  $("#decks").innerHTML = d.decks.map(k => {
+    const pct = v => (k.total ? v / k.total * 100 : 0).toFixed(1) + "%";
+    const done = k.total ? Math.round(k.learned / k.total * 100) : 0;
+    return `<div class="deck">
+      <div class="dh"><b>${esc(k.deck)}</b>
+        <span>${k.learned} из ${k.total} выучено · ${done}%</span></div>
+      <div class="pbar">
+        <i class="learned"  style="width:${pct(k.learned)}"></i>
+        <i class="learning" style="width:${pct(k.learning)}"></i>
+        <i class="new"      style="width:${pct(k.new)}"></i>
+      </div></div>`;
+  }).join("") || `<div class="hint">Колод пока нет.</div>`;
+
+  // --- как отвечаете ---
+  const a = d.actions || {}, at = (a.know||0) + (a.again||0) + (a.skip||0);
+  if (at) {
+    const w = v => (v / at * 100).toFixed(1) + "%";
+    const lbl = (v, t) => v / at > 0.08 ? `${t} ${Math.round(v/at*100)}%` : "";
+    $("#split").innerHTML =
+      `<i class="know"  style="width:${w(a.know||0)}">${lbl(a.know||0,"знаю")}</i>
+       <i class="again" style="width:${w(a.again||0)}">${lbl(a.again||0,"ещё раз")}</i>
+       <i class="skip"  style="width:${w(a.skip||0)}">${lbl(a.skip||0,"без ответа")}</i>`;
+    const share = Math.round((a.skip||0) / at * 100);
+    $("#splithint").innerHTML = `знаю — ${a.know||0}, ещё раз — ${a.again||0}, ` +
+      `погасло без ответа — ${a.skip||0}` +
+      (share > 60 ? ` · <span class="bad">${share}% карточек уходит без ответа</span> — ` +
+       `нажимайте Ctrl+Alt+1, иначе слово не считается изученным` : "");
+  } else {
+    $("#split").innerHTML = "";
+    $("#splithint").textContent = "Пока нет ответов.";
+  }
+
+  drawBars("#learnedbars", "#learnedaxis", d.learned_days.map(x => x.count),
+           d.learned_days.map(x => x.date.slice(8)), 6);
+  drawBars("#hourbars", "#houraxis", d.hours,
+           d.hours.map((_, i) => i), 3, true);
+  drawBars("#forecastbars", "#forecastaxis", d.forecast.map(x => x.count),
+           d.forecast.map((x, i) => i === 0 ? "сег" : x.date.slice(8)), 1, true);
+  const soon = d.forecast.reduce((n, x) => n + x.count, 0);
+  $("#forecasthint").textContent = soon
+    ? `в ближайшую неделю созреет повторов: ${soon}`
+    : "повторов пока не запланировано";
+
+  $("#learned tbody").innerHTML = d.recent_learned.length
+    ? d.recent_learned.map(r => `<tr>
+        <td class="w">${esc(r.word)}</td><td class="tr">${esc(r.translation)}</td>
+        <td class="hint">${esc(r.tags||"")}</td><td class="ok">${r.reps}</td>
+        <td class="hint">${esc((r.next_at||"").slice(0,10))}</td></tr>`).join("")
+    : `<tr><td colspan="5" class="empty">Пока ничего не выучено.
+         Слово становится выученным после двух ответов «Знаю».</td></tr>`;
 
   $("#live").textContent = `готово к показу: ${s.due_now}`;
+}
+
+function drawBars(barsSel, axisSel, values, labels, everyNth, warm){
+  const max = Math.max(1, ...values);
+  $(barsSel).innerHTML = values.map((v, i) =>
+    `<i class="b${warm ? " warm" : ""}" style="height:${(v / max * 100).toFixed(1)}%"
+        title="${labels[i]}: ${v}"></i>`).join("");
+  $(axisSel).innerHTML = labels.map((l, i) =>
+    `<span>${i % everyNth === 0 ? l : ""}</span>`).join("");
 }
 
 async function loadWords(){
@@ -307,6 +427,8 @@ async function loadSet(){
   $("#s_hide").value = s.hide_translation_ms; $("#s_corner").value = s.corner;
   $("#s_margin").value = s.margin_px; $("#s_focus").value = s.focus_tag;
   $("#s_scale").value = s.card_scale || "auto";
+  $("#s_know").value = s.know_to_learn || "2";
+  $("#s_review").value = s.review_learned || "0";
   $("#s_qfrom").value = s.quiet_from; $("#s_qto").value = s.quiet_to;
   $("#s_qen").value = s.quiet_enabled; $("#s_paused").value = s.paused;
   $("#s_orkey").value = s.openrouter_key; $("#s_ormodel").value = s.openrouter_model;
@@ -317,6 +439,7 @@ async function saveSet(){
     hide_translation_ms:$("#s_hide").value, corner:$("#s_corner").value,
     margin_px:$("#s_margin").value, focus_tag:$("#s_focus").value,
     card_scale:$("#s_scale").value,
+    know_to_learn:$("#s_know").value, review_learned:$("#s_review").value,
     quiet_from:$("#s_qfrom").value, quiet_to:$("#s_qto").value,
     quiet_enabled:$("#s_qen").value, paused:$("#s_paused").value,
     openrouter_key:$("#s_orkey").value, openrouter_model:$("#s_ormodel").value});

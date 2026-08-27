@@ -13,6 +13,7 @@ DAY = 1440
 # и десятиминутный шаг возвращал знакомое слово уже через три карточки.
 FIRST_STEPS = [120, 8 * 60, DAY]
 LEARNED_AFTER_MIN = 7 * DAY   # интервал, с которого слово считается выученным
+LEARNED_INTERVAL = 30 * DAY   # куда уводится слово, признанное выученным
 AGAIN_DELAY = 10              # «ещё раз» — слово нужно увидеть скоро
 SKIP_DELAY = 90               # непросмотренная карточка: не ответ, а «не увидел»
 
@@ -60,7 +61,15 @@ def grade(word_id, action):
     jitter = interval * random.uniform(-0.1, 0.1)
     due = _now() + timedelta(minutes=interval + jitter)
 
-    if interval >= LEARNED_AFTER_MIN:
+    # Слово считается выученным после нескольких верных ответов подряд —
+    # порог задаётся настройкой. Дальше оно не мешает: попадает в выборку,
+    # только если включён контроль выученных.
+    need = max(1, db.get_int("know_to_learn", 2))
+    if action == "know" and reps >= need:
+        status = "learned"
+        interval = max(interval, LEARNED_INTERVAL)
+        due = _now() + timedelta(minutes=interval)
+    elif interval >= LEARNED_AFTER_MIN:
         status = "learned"
     elif action == "skip" and reps == 0:
         status = "new"          # ни разу не отвечали — слово всё ещё новое
@@ -191,7 +200,8 @@ def next_word():
     due_learned = _count(" AND s.due_at <= ? AND s.status='learned'",
                          focus_param + (now,), focus_clause)
     p_learning = min(0.40, due_learning / 60.0)
-    p_learned = min(0.10, due_learned / 60.0)
+    review_learned = db.get("review_learned", "0") == "1"
+    p_learned = min(0.10, due_learned / 60.0) if review_learned else 0.0
 
     for exclude in (recent, []):
         r = random.random()
@@ -207,9 +217,11 @@ def next_word():
         # и ничего не успевает закрепиться.
         if quota_left > 0:
             variants.append((focus_clause + " AND s.status='new' ORDER BY RANDOM() LIMIT 30", ()))
-        variants.append((focus_clause + " AND s.due_at <= ? ORDER BY RANDOM() LIMIT 30", (now,)))
-        variants.append((focus_clause + " AND s.status='new' ORDER BY RANDOM() LIMIT 30", ()))
-        variants.append((focus_clause + " ORDER BY RANDOM() LIMIT 30", ()))
+        # Запасные ветки: выученные сюда не попадают, если контроль выключен.
+        tail = " AND s.status != 'learned' " if not review_learned else ""
+        variants.append((focus_clause + tail + " AND s.due_at <= ? ORDER BY RANDOM() LIMIT 30", (now,)))
+        variants.append((focus_clause + tail + " AND s.status='new' ORDER BY RANDOM() LIMIT 30", ()))
+        variants.append((focus_clause + tail + " ORDER BY RANDOM() LIMIT 30", ()))
 
         for clause, extra in variants:
             row = _pick(_build(clause, exclude),

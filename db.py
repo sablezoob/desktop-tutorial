@@ -64,7 +64,9 @@ DEFAULTS = {
     "quiet_enabled": "1",
     "paused": "0",
     "focus_tag": "",                # если задан — 80% показов из этого тега
-    "new_per_day": "0",      # 0 = без дневного лимита новых слов
+    "new_per_day": "0",         # 0 = без дневного лимита новых слов
+    "know_to_learn": "2",       # сколько раз нажать «Знаю», чтобы слово стало выученным
+    "review_learned": "0",      # 1 = изредка повторять выученные, 0 = не показывать
     "card_scale": "auto",     # auto | 0.9 | 1.0 | 1.2 | 1.4 — размер карточки
     "corner": "top-center",   # top-left|top-center|top-right|bottom-left|bottom-center|bottom-right|center
     "margin_px": "28",        # отступ от края экрана

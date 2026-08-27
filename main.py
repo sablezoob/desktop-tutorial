@@ -15,6 +15,8 @@ from PySide6.QtCore import Qt, QTimer
 from PySide6.QtGui import QAction, QActionGroup, QColor, QFont, QIcon, QPainter, QPixmap
 from PySide6.QtWidgets import QApplication, QMenu, QSystemTrayIcon
 
+import ai
+import aiworker
 import db
 import hotkeys
 import srs
@@ -120,6 +122,7 @@ class App:
 
         self.popup = Popup()
         self.popup.answered.connect(self.on_answer)
+        self.popup.unknown_word.connect(self.on_unknown_word)
         self._skip_reason = None
         self._interval_min = 3
         self._due_at = 0.0
@@ -139,6 +142,8 @@ class App:
         self.restart_timer()
 
         threading.Thread(target=self.serve, daemon=True).start()
+        aiworker.start()
+        log.info("Нейросеть: %s", "включена" if ai.is_enabled() else "выключена")
 
     def serve(self):
         try:
@@ -289,6 +294,23 @@ class App:
             self.popup.show_word(row)
         except Exception:
             log.exception("Ошибка при показе слова")
+
+    def on_unknown_word(self, word, context):
+        """Слово, отмеченное в примере. Разбор идёт фоном — интерфейс не ждёт."""
+        try:
+            wid, res = aiworker.queue_unknown(word, context)
+            log.info("Незнакомое слово «%s»: %s", word, res)
+            if res == "exists":
+                self.tray.showMessage("Vocab Popup", f"«{word}» уже есть в словаре",
+                                      QSystemTrayIcon.Information, 3000)
+            elif not ai.is_enabled():
+                self.tray.showMessage(
+                    "Vocab Popup",
+                    f"«{word}» добавлено, но перевод не подтянуть: "
+                    "нейросеть выключена в настройках дашборда.",
+                    QSystemTrayIcon.Warning, 5000)
+        except Exception:
+            log.exception("Не удалось поставить слово в очередь")
 
     def on_answer(self, word_id, action, ms):
         try:

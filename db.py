@@ -44,6 +44,19 @@ CREATE TABLE IF NOT EXISTS events (
     ms_visible INTEGER DEFAULT 0
 );
 
+-- Несколько примеров на слово: карточка показывает их по очереди, поэтому
+-- одно и то же слово каждый раз встречается в новом предложении.
+CREATE TABLE IF NOT EXISTS sentences (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    word_id    INTEGER NOT NULL REFERENCES words(id) ON DELETE CASCADE,
+    text_en    TEXT NOT NULL,
+    text_ru    TEXT DEFAULT '',
+    source     TEXT DEFAULT 'ai',    -- seed | ai
+    shown      INTEGER DEFAULT 0,
+    created_at TEXT NOT NULL,
+    UNIQUE(word_id, text_en)
+);
+
 CREATE TABLE IF NOT EXISTS settings (
     key   TEXT PRIMARY KEY,
     value TEXT
@@ -53,6 +66,7 @@ CREATE INDEX IF NOT EXISTS idx_srs_due    ON srs(due_at);
 CREATE INDEX IF NOT EXISTS idx_srs_status ON srs(status);
 CREATE INDEX IF NOT EXISTS idx_ev_word    ON events(word_id);
 CREATE INDEX IF NOT EXISTS idx_ev_time    ON events(shown_at);
+CREATE INDEX IF NOT EXISTS idx_sent_word  ON sentences(word_id);
 """
 
 DEFAULTS = {
@@ -70,8 +84,16 @@ DEFAULTS = {
     "card_scale": "auto",     # auto | 0.9 | 1.0 | 1.2 | 1.4 — размер карточки
     "corner": "top-center",   # top-left|top-center|top-right|bottom-left|bottom-center|bottom-right|center
     "margin_px": "28",        # отступ от края экрана
-    "openrouter_key": "",
-    "openrouter_model": "deepseek/deepseek-chat-v3-0324:free",
+    # --- нейросеть NVIDIA: примеры предложений и пополнение словаря ---
+    "ai_enabled": "0",              # 1 = разрешить обращения к нейросети
+    "ai_key": "",                   # ключ nvapi-… хранится только здесь, в базе
+    "ai_base_url": "https://integrate.api.nvidia.com/v1",
+    "ai_model": "deepseek-ai/deepseek-v4-pro-0813",
+    "ai_sentences_per_word": "4",   # сколько примеров держать на слово
+    "ai_min_new_words": "10",       # если новых слов меньше — дозаказать ещё
+    "ai_words_per_batch": "20",     # сколько слов просить за раз
+    "ai_level": "A2-B1",            # уровень генерируемой лексики
+    "ai_grammar": "Present Perfect",  # грамматика, под которую строятся примеры
 }
 
 
@@ -221,6 +243,39 @@ def add_word(word, ipa="", translation="", example_en="", example_ru="",
     c.execute("INSERT INTO srs(word_id, due_at, status) VALUES (?, ?, 'new')", (wid, now_iso()))
     c.commit()
     return wid, "created"
+
+
+def add_sentence(word_id, text_en, text_ru="", source="ai"):
+    """Добавляет пример. Дубли по тексту игнорируются."""
+    text_en = (text_en or "").strip()
+    if not text_en:
+        return False
+    c = conn()
+    try:
+        c.execute("""INSERT INTO sentences(word_id, text_en, text_ru, source, created_at)
+                     VALUES (?,?,?,?,?)""",
+                  (word_id, text_en, (text_ru or "").strip(), source, now_iso()))
+        c.commit()
+        return True
+    except sqlite3.IntegrityError:
+        return False
+
+
+def pick_sentence(word_id):
+    """Наименее показанный пример — так примеры идут по кругу, а не один и тот же."""
+    return conn().execute(
+        """SELECT * FROM sentences WHERE word_id=?
+           ORDER BY shown, RANDOM() LIMIT 1""", (word_id,)).fetchone()
+
+
+def mark_sentence_shown(sentence_id):
+    c = conn()
+    c.execute("UPDATE sentences SET shown = shown + 1 WHERE id=?", (sentence_id,))
+    c.commit()
+
+
+def sentence_count(word_id):
+    return conn().execute("SELECT COUNT(*) FROM sentences WHERE word_id=?", (word_id,)).fetchone()[0]
 
 
 def set_forms(word_id, v2="", v3="", ipa2="", ipa3=""):

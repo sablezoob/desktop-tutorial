@@ -7,6 +7,8 @@ from datetime import datetime, timedelta
 
 from flask import Flask, jsonify, render_template, request
 
+import ai
+import aiworker
 import db
 import quiz
 import srs
@@ -305,6 +307,42 @@ def api_word_delete(wid):
     c.execute("DELETE FROM words WHERE id=?", (wid,))
     c.commit()
     return jsonify({"ok": True})
+
+
+@app.get("/api/ai/status")
+def api_ai_status():
+    """Что нейросеть уже сделала и что стоит в очереди."""
+    c = db.conn()
+    q = lambda sql, p=(): c.execute(sql, p).fetchone()[0]
+    return jsonify({
+        "enabled": ai.is_enabled(),
+        "has_key": bool((db.get("ai_key", "") or "").strip()),
+        "model": db.get("ai_model"),
+        "sentences_ai": q("SELECT COUNT(*) FROM sentences WHERE source='ai'"),
+        "sentences_total": q("SELECT COUNT(*) FROM sentences"),
+        "words_ai": q("SELECT COUNT(*) FROM words WHERE tags LIKE '%ai%'"),
+        "queue": q("SELECT COUNT(*) FROM words WHERE translation=''"),
+        "new_left": aiworker.new_words_left(),
+        "min_new": db.get_int("ai_min_new_words", 10),
+        "avg_sentences": round(q("SELECT COALESCE(AVG(n),0) FROM "
+                                 "(SELECT COUNT(*) n FROM sentences GROUP BY word_id)"), 1),
+        "queued_words": [dict(r) for r in c.execute(
+            "SELECT word, note FROM words WHERE translation='' ORDER BY created_at LIMIT 10")],
+    })
+
+
+@app.post("/api/ai/test")
+def api_ai_test():
+    """Кнопка «Проверить связь» — сразу видно, живы ли ключ и модель."""
+    import time
+    t0 = time.time()
+    try:
+        ok = ai.check_connection()
+        return jsonify({"ok": ok, "seconds": round(time.time() - t0, 1),
+                        "model": db.get("ai_model")})
+    except Exception as e:
+        return jsonify({"ok": False, "error": f"{type(e).__name__}: {str(e)[:200]}",
+                        "seconds": round(time.time() - t0, 1)})
 
 
 @app.get("/api/settings")

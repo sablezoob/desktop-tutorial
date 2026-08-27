@@ -255,13 +255,37 @@ autumn | осень"></textarea>
         <option value="0">выключена</option><option value="1">включена</option></select></div>
     </div>
 
-    <h2>OpenRouter — автообогащение (подключим позже)</h2>
+    <h2>Нейросеть — примеры и пополнение словаря</h2>
     <div class="row">
-      <div><label>API-ключ</label><input id="s_orkey" type="password" placeholder="sk-or-v1-…"></div>
-      <div><label>Модель</label><input id="s_ormodel"></div>
+      <div><label>Помощник</label><select id="s_ai">
+        <option value="0">выключен</option>
+        <option value="1">включён</option>
+      </select></div>
+      <div style="flex:2"><label>API-ключ NVIDIA</label>
+        <input id="s_aikey" type="password" placeholder="nvapi-…"></div>
     </div>
-    <div class="hint">Пока поле пустое — перевод, транскрипция и примеры заполняются вручную
-      при импорте. Ключ здесь просто хранится до подключения конвейера.</div>
+    <div class="row" style="margin-top:14px">
+      <div style="flex:2"><label>Модель</label><select id="s_aimodel">
+        <option value="deepseek-ai/deepseek-v4-pro-0813">deepseek-v4-pro (работает)</option>
+        <option value="deepseek-ai/deepseek-v4-flash-0731">deepseek-v4-flash (не отвечает)</option>
+      </select></div>
+      <div><label>Примеров на слово</label><input id="s_aisent" type="number" min="1" max="10"></div>
+      <div><label>Пополнять, если новых меньше</label><input id="s_aimin" type="number" min="0" max="200"></div>
+      <div><label>Слов за раз</label><input id="s_aibatch" type="number" min="5" max="50"></div>
+    </div>
+    <div class="row" style="margin-top:14px">
+      <div><label>Уровень лексики</label><input id="s_ailevel" placeholder="A2-B1"></div>
+      <div style="flex:2"><label>Грамматика для примеров</label>
+        <input id="s_aigram" placeholder="Present Perfect"></div>
+      <div style="flex:0"><button class="ghost" onclick="testAi()">Проверить связь</button></div>
+    </div>
+    <div class="hint" id="aitest"></div>
+    <div class="hint" style="margin-top:10px">
+      Ключ хранится только в вашей базе <code>data/vocab.db</code>, в репозиторий не попадает.
+      Модель отвечает 30–60 секунд, поэтому работает в фоне: примеры и новые слова
+      появляются сами, интерфейс не ждёт.
+    </div>
+    <div id="aistat" class="grid" style="margin-top:14px"></div>
 
     <div style="margin-top:18px"><button class="act" onclick="saveSet()">Сохранить</button>
       <span id="sav" class="hint"></span></div>
@@ -431,8 +455,42 @@ async function loadSet(){
   $("#s_review").value = s.review_learned || "0";
   $("#s_qfrom").value = s.quiet_from; $("#s_qto").value = s.quiet_to;
   $("#s_qen").value = s.quiet_enabled; $("#s_paused").value = s.paused;
-  $("#s_orkey").value = s.openrouter_key; $("#s_ormodel").value = s.openrouter_model;
+  $("#s_ai").value = s.ai_enabled || "0";
+  $("#s_aikey").value = s.ai_key || "";
+  $("#s_aimodel").value = s.ai_model || "deepseek-ai/deepseek-v4-pro-0813";
+  $("#s_aisent").value = s.ai_sentences_per_word || "4";
+  $("#s_aimin").value = s.ai_min_new_words || "10";
+  $("#s_aibatch").value = s.ai_words_per_batch || "20";
+  $("#s_ailevel").value = s.ai_level || "A2-B1";
+  $("#s_aigram").value = s.ai_grammar || "Present Perfect";
+  loadAiStatus();
 }
+async function loadAiStatus(){
+  const a = await (await fetch("/api/ai/status")).json();
+  const tile = (n, l, c) => `<div class="card"><div class="n ${c||""}">${n}</div><div class="l">${l}</div></div>`;
+  $("#aistat").innerHTML =
+    tile(a.enabled ? "вкл" : "выкл", "помощник", a.enabled ? "ok" : "") +
+    tile(a.sentences_total, "примеров всего") +
+    tile(a.sentences_ai, "из них от нейросети", "ok") +
+    tile(a.avg_sentences, "примеров на слово") +
+    tile(a.words_ai, "слов добавлено") +
+    tile(a.queue, "ждут разбора", a.queue ? "warn" : "") +
+    tile(a.new_left, "новых слов осталось", a.new_left < a.min_new ? "warn" : "");
+  if (a.queued_words && a.queued_words.length)
+    $("#aistat").innerHTML += `<div class="card" style="grid-column:span 2">
+      <div class="l">в очереди на разбор</div>
+      <div style="margin-top:6px">${a.queued_words.map(w => esc(w.word)).join(", ")}</div></div>`;
+}
+
+async function testAi(){
+  $("#aitest").textContent = "проверяю связь, это может занять до минуты…";
+  const r = await (await fetch("/api/ai/test", {method:"POST"})).json();
+  $("#aitest").innerHTML = r.ok
+    ? `<span class="ok">связь есть</span> · ${r.model} · ответ за ${r.seconds} с`
+    : `<span class="bad">не отвечает</span> · ${esc(r.error||"")} · ${r.seconds} с`;
+  loadAiStatus();
+}
+
 async function saveSet(){
   const body = JSON.stringify({
     interval_min:$("#s_interval").value, popup_seconds:$("#s_life").value,
@@ -442,7 +500,10 @@ async function saveSet(){
     know_to_learn:$("#s_know").value, review_learned:$("#s_review").value,
     quiet_from:$("#s_qfrom").value, quiet_to:$("#s_qto").value,
     quiet_enabled:$("#s_qen").value, paused:$("#s_paused").value,
-    openrouter_key:$("#s_orkey").value, openrouter_model:$("#s_ormodel").value});
+    ai_enabled:$("#s_ai").value, ai_key:$("#s_aikey").value,
+    ai_model:$("#s_aimodel").value, ai_sentences_per_word:$("#s_aisent").value,
+    ai_min_new_words:$("#s_aimin").value, ai_words_per_batch:$("#s_aibatch").value,
+    ai_level:$("#s_ailevel").value, ai_grammar:$("#s_aigram").value});
   await fetch("/api/settings", {method:"POST", headers:{"Content-Type":"application/json"}, body});
   $("#sav").innerHTML = '<span class="ok">сохранено</span>';
   setTimeout(() => $("#sav").textContent = "", 2500);

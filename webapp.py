@@ -102,7 +102,8 @@ def api_answer():
     if action not in ("know", "again", "skip"):
         return jsonify({"ok": False, "error": "bad action"}), 400
     try:
-        db.log_event(wid, action, int(d.get("ms") or 0))
+        db.log_event(wid, action, int(d.get("ms") or 0),
+                     source=("train" if d.get("source") == "train" else "popup"))
         srs.grade(wid, action)
     except sqlite3.IntegrityError:
         return jsonify({"ok": False, "error": "word deleted"}), 404
@@ -117,6 +118,70 @@ def api_progress():
         "unreviewed": srs.unreviewed_count(),
         "never_shown": srs.never_shown_count(),
         "threshold": db.get_int("review_threshold", 25),
+    })
+
+
+@app.post("/api/session/finish")
+def api_session_finish():
+    """Итог пройденной тренировки. Отдельные ответы уже записаны — здесь
+    фиксируется сама сессия, иначе по событиям не видно, где она кончилась."""
+    d = request.get_json(force=True) or {}
+    try:
+        sid = db.log_session(
+            mode=d.get("mode", ""), deck=d.get("deck", ""),
+            total=d.get("total", 0), right_cnt=d.get("right", 0),
+            wrong_cnt=d.get("wrong", 0), skipped=d.get("skipped", 0),
+            seconds=d.get("seconds", 0))
+    except (TypeError, ValueError):
+        return jsonify({"ok": False, "error": "bad payload"}), 400
+    return jsonify({"ok": True, "id": sid})
+
+
+@app.get("/api/sessions")
+def api_sessions():
+    """История тренировок и сводка по режимам."""
+    c = db.conn()
+    day = srs.LOCAL_DAY.replace("shown_at", "finished_at")
+    today = datetime.now().strftime("%Y-%m-%d")
+
+    recent = [dict(r) for r in c.execute(
+        f"""SELECT id, mode, deck, total, right_cnt, wrong_cnt, skipped, seconds,
+                   datetime(finished_at,'localtime') at, {day} d
+            FROM sessions ORDER BY id DESC LIMIT 15""")]
+
+    by_mode = [dict(r) for r in c.execute(
+        """SELECT mode, COUNT(*) sessions, SUM(total) cards,
+                  SUM(right_cnt) right_cnt, SUM(wrong_cnt) wrong_cnt,
+                  SUM(seconds) seconds
+           FROM sessions GROUP BY mode ORDER BY cards DESC""")]
+
+    q = lambda sql, p=(): c.execute(sql, p).fetchone()[0]
+    total_cards = q("SELECT COALESCE(SUM(total),0) FROM sessions")
+    total_right = q("SELECT COALESCE(SUM(right_cnt),0) FROM sessions")
+    total_wrong = q("SELECT COALESCE(SUM(wrong_cnt),0) FROM sessions")
+    answered = total_right + total_wrong
+
+    days = []
+    agg = {r["d"]: r["n"] for r in c.execute(
+        f"SELECT {day} d, COALESCE(SUM(total),0) n FROM sessions GROUP BY d")}
+    for i in range(13, -1, -1):
+        dd = (datetime.now() - timedelta(days=i)).strftime("%Y-%m-%d")
+        days.append({"date": dd, "cards": agg.get(dd, 0)})
+
+    return jsonify({
+        "sessions": q("SELECT COUNT(*) FROM sessions"),
+        "sessions_today": q(f"SELECT COUNT(*) FROM sessions WHERE {day}=?", (today,)),
+        "cards": total_cards,
+        "cards_today": q(f"SELECT COALESCE(SUM(total),0) FROM sessions WHERE {day}=?", (today,)),
+        "right": total_right,
+        "wrong": total_wrong,
+        "accuracy": round(total_right / answered * 100) if answered else 0,
+        "minutes": round(q("SELECT COALESCE(SUM(seconds),0) FROM sessions") / 60),
+        "answers_from_train": q("SELECT COUNT(*) FROM events WHERE source='train'"),
+        "answers_from_popup": q("SELECT COUNT(*) FROM events WHERE source='popup'"),
+        "by_mode": by_mode,
+        "recent": recent,
+        "days": days,
     })
 
 

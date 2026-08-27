@@ -82,10 +82,24 @@
   .done{text-align:center;padding:40px 20px}
   .done .big{font-size:46px;font-weight:600}
   .done .sub{color:var(--dim);margin-top:8px}
-  .tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:26px 0}
-  .tiles div{background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:14px}
+  .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));
+         gap:12px;margin:26px 0}
+  .tiles > div{background:var(--panel2);border:1px solid var(--line);
+               border-radius:10px;padding:14px}
   .tiles .n{font-size:26px;font-weight:600}
   .tiles .l{color:var(--muted);font-size:11px;text-transform:uppercase}
+  .history{margin-top:32px;text-align:left}
+  .history h3{font-size:15px;color:var(--dim);font-weight:600;margin:0 0 10px}
+  .history .sum{display:flex;gap:18px;flex-wrap:wrap;color:var(--dim);font-size:13px;
+                margin-bottom:10px}
+  .history .sum b{color:var(--text);font-size:15px}
+  .tablewrap{width:100%;overflow-x:auto}
+  .history table{width:100%;border-collapse:collapse;min-width:520px}
+  .history th{text-align:left;color:var(--muted);font-size:11px;text-transform:uppercase;
+              letter-spacing:.5px;padding:7px 9px;border-bottom:1px solid var(--line);
+              font-weight:500}
+  .history td{padding:8px 9px;border-bottom:1px solid #22262f;font-size:13px}
+  .history .ok{color:var(--ok)} .history .warn{color:var(--warn)}
   kbd{background:var(--panel2);border:1px solid var(--line);border-bottom-width:2px;
       border-radius:5px;padding:1px 6px;font-size:12px;font-family:inherit;color:var(--dim)}
 
@@ -156,6 +170,7 @@
       <div class="tiles" id="tiles"></div>
       <button class="act" onclick="location.reload()">Ещё раз</button>
       <div style="margin-top:16px"><a href="/">Вернуться к дашборду</a></div>
+      <div id="history" class="history"></div>
     </div>
   </section>
 </main>
@@ -170,6 +185,7 @@ const ONLY = new URLSearchParams(location.search).get("only") || "";
 
 let mode = "selftest", cards = [], idx = 0, revealed = false, locked = false;
 let right = 0, wrong = 0, startedAt = 0;
+let skipped = 0, sessionStart = 0, sessionSaved = false;
 
 document.querySelectorAll("#modes button").forEach(b => b.onclick = () => {
   document.querySelectorAll("#modes button").forEach(x => x.classList.remove("on"));
@@ -204,7 +220,8 @@ async function start(){
       : "Нет карточек для тренировки.");
     return;
   }
-  idx = 0; right = 0; wrong = 0;
+  idx = 0; right = 0; wrong = 0; skipped = 0;
+  sessionStart = Date.now(); sessionSaved = false;
   $("#setup").style.display = "none";
   $("#stage").style.display = "block";
   render();
@@ -349,7 +366,9 @@ function verdict(ok){
 }
 
 async function answer(action){
-  if (action === "know") right++; else if (action === "again") wrong++;
+  if (action === "know") right++;
+  else if (action === "again") wrong++;
+  else skipped++;
   await send(action);
   idx++;
   render();
@@ -357,22 +376,70 @@ async function answer(action){
 
 function send(action){
   return fetch("/api/answer", {method:"POST", headers:{"Content-Type":"application/json"},
-    body: JSON.stringify({word_id: cards[idx].id, action, ms: Date.now() - startedAt})});
+    body: JSON.stringify({word_id: cards[idx].id, action, ms: Date.now() - startedAt,
+                          source: "train"})});
 }
 
-function finish(){
+async function finish(){
   $("#stage").style.display = "none";
   $("#done").style.display = "block";
   $("#prog").textContent = "";
+  if (!sessionSaved) {
+    sessionSaved = true;
+    await fetch("/api/session/finish", {method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({mode, deck: $("#deck").value, total: cards.length,
+                            right, wrong, skipped,
+                            seconds: Math.round((Date.now() - sessionStart)/1000)})});
+  }
+  showHistory();
   const total = right + wrong;
   const pct = total ? Math.round(right / total * 100) : 0;
   $("#score").textContent = pct + "%";
   $("#score").style.color = pct >= 80 ? "var(--ok)" : pct >= 50 ? "var(--warn)" : "var(--bad)";
   $("#scoresub").textContent = `пройдено карточек: ${cards.length}`;
+  const secs = Math.round((Date.now() - sessionStart) / 1000);
   $("#tiles").innerHTML = `
     <div><div class="n" style="color:var(--ok)">${right}</div><div class="l">знаю</div></div>
     <div><div class="n" style="color:var(--warn)">${wrong}</div><div class="l">ещё раз</div></div>
-    <div><div class="n">${cards.length}</div><div class="l">всего</div></div>`;
+    <div><div class="n">${cards.length}</div><div class="l">карточек</div></div>
+    <div><div class="n">${secs < 60 ? secs + " с" : Math.round(secs/60) + " мин"}</div>
+         <div class="l">время</div></div>
+    <div><div class="n">${total ? Math.round(secs/total) : 0} с</div>
+         <div class="l">на карточку</div></div>`;
+}
+
+const MODE_NAMES = {selftest:"самопроверка", quiz:"квиз", forms:"формы",
+                    type:"угадай", show:"просмотр"};
+
+async function showHistory(){
+  const d = await (await fetch("/api/sessions")).json();
+  const box = $("#history");
+  if (!d.sessions) { box.innerHTML = ""; return; }
+  const rows = d.recent.slice(0, 8).map(s => {
+    const answered = s.right_cnt + s.wrong_cnt;
+    const pct = answered ? Math.round(s.right_cnt / answered * 100) : 0;
+    return `<tr><td>${s.at.slice(5, 16)}</td>
+      <td>${MODE_NAMES[s.mode] || s.mode || "—"}</td>
+      <td>${s.deck || "все слова"}</td>
+      <td>${s.total}</td>
+      <td class="ok">${s.right_cnt}</td>
+      <td class="warn">${s.wrong_cnt}</td>
+      <td>${pct}%</td></tr>`;
+  }).join("");
+  box.innerHTML = `
+    <h3>Ваши тренировки</h3>
+    <div class="sum">
+      <span><b>${d.sessions}</b> сессий</span>
+      <span><b>${d.cards}</b> карточек</span>
+      <span><b>${d.accuracy}%</b> верных</span>
+      <span><b>${d.minutes >= 1 ? d.minutes + " мин" : "< 1 мин"}</b> всего</span>
+      <span>сегодня: <b>${d.cards_today}</b> карточек за <b>${d.sessions_today}</b> сессий</span>
+    </div>
+    <div class="tablewrap"><table>
+      <thead><tr><th>когда</th><th>режим</th><th>колода</th><th>карточек</th>
+        <th>знаю</th><th>ещё раз</th><th>верно</th></tr></thead>
+      <tbody>${rows}</tbody></table></div>`;
 }
 
 document.addEventListener("keydown", e => {

@@ -166,6 +166,9 @@
     <div class="xaxis" id="forecastaxis"></div>
     <div class="hint" id="forecasthint"></div>
 
+    <h2>Тренировки</h2>
+    <div id="trainstat"></div>
+
     <h2>Тяжёлые слова — чаще всего жмёшь «Ещё раз»</h2>
     <div class="tablewrap"><table id="hard"><thead><tr>
       <th>Слово</th><th>Перевод</th><th>Показов</th><th>Знаю</th><th>Ещё раз</th>
@@ -432,6 +435,7 @@ async function loadStats(){
     : `<tr><td colspan="5" class="empty">Пока ничего не выучено.
          Слово становится выученным после двух ответов «Знаю».</td></tr>`;
 
+  loadTrainStats();
   $("#live").textContent = `готово к показу: ${s.due_now}`;
 }
 
@@ -442,6 +446,58 @@ function drawBars(barsSel, axisSel, values, labels, everyNth, warm){
         title="${labels[i]}: ${v}"></i>`).join("");
   $(axisSel).innerHTML = labels.map((l, i) =>
     `<span>${i % everyNth === 0 ? l : ""}</span>`).join("");
+}
+
+const MODE_NAMES = {selftest:"самопроверка", quiz:"квиз", forms:"формы глагола",
+                    type:"угадай", show:"просмотр"};
+
+async function loadTrainStats(){
+  const d = await (await fetch("/api/sessions")).json();
+  const box = $("#trainstat");
+  if (!d.sessions){
+    box.innerHTML = `<div class="hint">Тренировок пока не было.
+      <a href="/train">Пройти первую</a> — это те же слова, но пачкой и с проверкой.</div>`;
+    return;
+  }
+  const tile = (n, l, c) => `<div class="card"><div class="n ${c||""}">${n}</div>
+                             <div class="l">${l}</div></div>`;
+  const modes = d.by_mode.map(m => {
+    const answered = m.right_cnt + m.wrong_cnt;
+    const pct = answered ? Math.round(m.right_cnt / answered * 100) : 0;
+    return `<div class="deck">
+      <div class="dh"><b>${MODE_NAMES[m.mode] || m.mode || "—"}</b>
+        <span>${m.cards} карточек за ${m.sessions} сессий · ${pct}% верных</span></div>
+      <div class="pbar"><i class="learned" style="width:${pct}%"></i>
+        <i class="learning" style="width:${100-pct}%"></i></div></div>`;
+  }).join("");
+  const rows = d.recent.slice(0, 8).map(x => {
+    const answered = x.right_cnt + x.wrong_cnt;
+    const pct = answered ? Math.round(x.right_cnt / answered * 100) : 0;
+    return `<tr><td>${esc(x.at.slice(5,16))}</td>
+      <td>${esc(MODE_NAMES[x.mode] || x.mode || "—")}</td>
+      <td class="hint">${esc(x.deck || "все слова")}</td>
+      <td>${x.total}</td><td class="ok">${x.right_cnt}</td>
+      <td style="color:var(--warn)">${x.wrong_cnt}</td>
+      <td>${pct}%</td>
+      <td class="hint">${x.seconds < 60 ? x.seconds + " с" : Math.round(x.seconds/60) + " мин"}</td></tr>`;
+  }).join("");
+  box.innerHTML = `
+    <div class="grid" style="margin-bottom:16px">
+      ${tile(d.sessions, "сессий")}
+      ${tile(d.cards, "карточек пройдено")}
+      ${tile(d.accuracy + "%", "верных ответов", d.accuracy >= 70 ? "ok" : "")}
+      ${tile(d.minutes >= 1 ? d.minutes + " мин" : "меньше минуты", "потрачено")}
+      ${tile(d.cards_today, "карточек сегодня")}
+      ${tile(d.answers_from_train, "ответов из тренировки", "ok")}
+    </div>
+    ${modes}
+    <div class="hint" style="margin:10px 0 14px">
+      Зелёная часть — доля верных ответов в режиме.
+    </div>
+    <div class="tablewrap"><table><thead><tr>
+      <th>когда</th><th>режим</th><th>колода</th><th>карточек</th>
+      <th>знаю</th><th>ещё раз</th><th>верно</th><th>время</th>
+    </tr></thead><tbody>${rows}</tbody></table></div>`;
 }
 
 async function loadWords(){

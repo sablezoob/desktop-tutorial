@@ -57,6 +57,22 @@ CREATE TABLE IF NOT EXISTS sentences (
     UNIQUE(word_id, text_en)
 );
 
+-- Итоги тренировочных сессий: сколько прошли, что ответили, в каком режиме.
+-- Отдельные ответы и так лежат в events, но по ним не видно, где кончилась
+-- одна сессия и началась другая.
+CREATE TABLE IF NOT EXISTS sessions (
+    id          INTEGER PRIMARY KEY AUTOINCREMENT,
+    started_at  TEXT NOT NULL,
+    finished_at TEXT NOT NULL,
+    mode        TEXT DEFAULT '',
+    deck        TEXT DEFAULT '',
+    total       INTEGER DEFAULT 0,
+    right_cnt   INTEGER DEFAULT 0,
+    wrong_cnt   INTEGER DEFAULT 0,
+    skipped     INTEGER DEFAULT 0,
+    seconds     INTEGER DEFAULT 0
+);
+
 CREATE TABLE IF NOT EXISTS settings (
     key   TEXT PRIMARY KEY,
     value TEXT
@@ -67,6 +83,7 @@ CREATE INDEX IF NOT EXISTS idx_srs_status ON srs(status);
 CREATE INDEX IF NOT EXISTS idx_ev_word    ON events(word_id);
 CREATE INDEX IF NOT EXISTS idx_ev_time    ON events(shown_at);
 CREATE INDEX IF NOT EXISTS idx_sent_word  ON sentences(word_id);
+CREATE INDEX IF NOT EXISTS idx_sess_time  ON sessions(finished_at);
 """
 
 DEFAULTS = {
@@ -123,6 +140,12 @@ def conn():
 
 # Формы неправильного глагола живут отдельными полями, а не строкой в переводе:
 # так их можно разложить таблицей на карточке и спрятать в режиме проверки.
+EVENT_COLUMNS = {
+    # Откуда пришёл ответ: popup — всплывающая карточка, train — тренировка.
+    # Без этого не отделить фоновые показы от осознанного разбора.
+    "source": "TEXT DEFAULT 'popup'",
+}
+
 EXTRA_COLUMNS = {
     "v2": "TEXT DEFAULT ''",
     "v3": "TEXT DEFAULT ''",
@@ -137,6 +160,10 @@ def ensure_columns():
     for name, decl in EXTRA_COLUMNS.items():
         if name not in have:
             c.execute(f"ALTER TABLE words ADD COLUMN {name} {decl}")
+    have_ev = {r["name"] for r in c.execute("PRAGMA table_info(events)")}
+    for name, decl in EVENT_COLUMNS.items():
+        if name not in have_ev:
+            c.execute(f"ALTER TABLE events ADD COLUMN {name} {decl}")
     c.commit()
 
 
@@ -293,8 +320,21 @@ def set_forms(word_id, v2="", v3="", ipa2="", ipa3=""):
     c.commit()
 
 
-def log_event(word_id, action, ms_visible=0):
+def log_event(word_id, action, ms_visible=0, source="popup"):
     c = conn()
-    c.execute("INSERT INTO events(word_id, shown_at, action, ms_visible) VALUES (?,?,?,?)",
-              (word_id, now_iso(), action, int(ms_visible)))
+    c.execute("""INSERT INTO events(word_id, shown_at, action, ms_visible, source)
+                 VALUES (?,?,?,?,?)""",
+              (word_id, now_iso(), action, int(ms_visible), source))
     c.commit()
+
+
+def log_session(mode, deck, total, right_cnt, wrong_cnt, skipped, seconds, started_at=None):
+    """Итог тренировки. Пишется один раз, когда сессия дошла до конца."""
+    c = conn()
+    c.execute("""INSERT INTO sessions(started_at, finished_at, mode, deck,
+                                      total, right_cnt, wrong_cnt, skipped, seconds)
+                 VALUES (?,?,?,?,?,?,?,?,?)""",
+              (started_at or now_iso(), now_iso(), mode or "", deck or "",
+               int(total), int(right_cnt), int(wrong_cnt), int(skipped), int(seconds)))
+    c.commit()
+    return c.execute("SELECT last_insert_rowid()").fetchone()[0]

@@ -64,3 +64,30 @@ def test_empty_history_is_valid(client):
 def test_bad_payload_does_not_break(client):
     r = client.post("/api/session/finish", json={"mode": "quiz", "total": "много"})
     assert r.status_code == 400
+
+
+def test_write_waits_for_busy_database(fresh_db, words):
+    """Базу может держать дашборд или фоновый помощник — ответ пользователя
+    из-за этого теряться не должен."""
+    import sqlite3
+    import threading
+    import time
+
+    blocker = sqlite3.connect(fresh_db.DB_PATH, timeout=1)
+    blocker.execute("BEGIN EXCLUSIVE")
+    result = []
+
+    def writer():
+        try:
+            fresh_db.log_event(words["draw"], "skip", 100)
+            result.append("ok")
+        except Exception as e:                      # pragma: no cover
+            result.append(type(e).__name__)
+
+    th = threading.Thread(target=writer)
+    th.start()
+    time.sleep(0.5)
+    blocker.rollback()
+    blocker.close()
+    th.join(timeout=15)
+    assert result == ["ok"], f"запись не дождалась освобождения: {result}"

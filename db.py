@@ -122,15 +122,39 @@ DEFAULTS = {
 }
 
 
+def write(sql, params=()):
+    """Запись с повтором: базу могут держать дашборд, фоновый помощник
+    или внешний инструмент, и терять из-за этого ответ пользователя нельзя.
+    """
+    import time as _time
+    last = None
+    for attempt in range(WRITE_RETRIES):
+        try:
+            c = conn()
+            c.execute(sql, params)
+            c.commit()
+            return True
+        except sqlite3.OperationalError as e:
+            if "locked" not in str(e).lower() and "busy" not in str(e).lower():
+                raise
+            last = e
+            _time.sleep(0.3 * (attempt + 1))
+    raise last
+
+
 def now_iso():
     return datetime.now(timezone.utc).isoformat(timespec="seconds")
+
+
+BUSY_TIMEOUT = 30      # секунд ждать освобождения базы, прежде чем сдаться
+WRITE_RETRIES = 3      # столько раз повторить запись, если база занята
 
 
 def conn():
     c = getattr(_local, "conn", None)
     if c is None:
         os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
-        c = sqlite3.connect(DB_PATH, timeout=15)
+        c = sqlite3.connect(DB_PATH, timeout=BUSY_TIMEOUT)
         c.row_factory = sqlite3.Row
         c.execute("PRAGMA journal_mode=WAL")
         c.execute("PRAGMA foreign_keys=ON")
@@ -304,9 +328,7 @@ def pick_sentence(word_id):
 
 
 def mark_sentence_shown(sentence_id):
-    c = conn()
-    c.execute("UPDATE sentences SET shown = shown + 1 WHERE id=?", (sentence_id,))
-    c.commit()
+    write("UPDATE sentences SET shown = shown + 1 WHERE id=?", (sentence_id,))
 
 
 def sentence_count(word_id):
@@ -321,11 +343,9 @@ def set_forms(word_id, v2="", v3="", ipa2="", ipa3=""):
 
 
 def log_event(word_id, action, ms_visible=0, source="popup"):
-    c = conn()
-    c.execute("""INSERT INTO events(word_id, shown_at, action, ms_visible, source)
-                 VALUES (?,?,?,?,?)""",
-              (word_id, now_iso(), action, int(ms_visible), source))
-    c.commit()
+    write("""INSERT INTO events(word_id, shown_at, action, ms_visible, source)
+             VALUES (?,?,?,?,?)""",
+          (word_id, now_iso(), action, int(ms_visible), source))
 
 
 def log_session(mode, deck, total, right_cnt, wrong_cnt, skipped, seconds, started_at=None):
